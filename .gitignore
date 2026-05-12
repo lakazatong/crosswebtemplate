@@ -1,0 +1,6 @@
+package-lock.json
+.build/
+.gradle/
+node_modules/
+dist/
+desktop/external/
