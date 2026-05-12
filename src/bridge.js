@@ -1,11 +1,14 @@
-export function increment(input) {
-    if (window.bridge?.increment) {
-        return window.bridge.increment(input);
+/**
+ * @param {{ value: number }} data
+ * @returns {{ origin: string, value: number }}
+ */
+export function increment(data) {
+    if (window.bridge_increment) {
+        return window.bridge_increment(data);
     }
 
-    const data = JSON.parse(input);
-
-    return JSON.stringify({
-        data: data.data + 1,
-    });
+    return {
+        origin: "From JavaScript: ",
+        value: data.value + 1,
+    };
 }

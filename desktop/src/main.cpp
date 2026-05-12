@@ -76,10 +76,8 @@ void app(void)
         w.navigate("file:///" + std::string(WWW_PATH) + "/index.html");
 #endif
 
-        w.bind("increment", [](const std::string &input)
-               {
-            extern const char *increment(const char *ptr, size_t len);
-            return std::string(increment(input.c_str(), input.size())); });
+        w.bind("bridge_increment", [](const std::string &input)
+               { return std::string(increment(input.c_str(), input.size())); });
 
         w.run();
     }

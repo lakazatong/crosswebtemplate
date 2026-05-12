@@ -2,19 +2,24 @@ import { useState } from "react";
 import { increment } from "./bridge.js";
 
 export default function App() {
-  const [count, setCount] = useState(0);
+    const [origin, setOrigin] = useState("");
+    const [count, setCount] = useState(0);
 
-  async function onClick() {
-    const response = await increment(JSON.stringify({ data: count }));
-    setCount(JSON.parse(response).data);
-  }
+    async function onClick() {
+        const response = await increment({ value: count });
+        setOrigin(response.origin);
+        setCount(response.value);
+    }
 
-  return (
-    <main className="screen">
-      <p className="value">{count}</p>
-      <button className="button" type="button" onClick={onClick}>
-        Increment
-      </button>
-    </main>
-  );
+    return (
+        <main className="screen">
+            <p className="value">
+                {origin}
+                {count}
+            </p>
+            <button className="button" type="button" onClick={onClick}>
+                Increment
+            </button>
+        </main>
+    );
 }
