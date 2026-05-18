@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "[Windows] Debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.build/windows/Debug/cwt.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/.build/windows",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "[Windows] Start",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/dist/windows/cwt.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}/dist/windows",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        }
+    ]
+}

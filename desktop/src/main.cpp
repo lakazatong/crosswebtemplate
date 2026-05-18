@@ -16,7 +16,25 @@
 
 using json = nlohmann::json;
 
-extern "C" const char *increment(const char *ptr, size_t len);
+extern "C" const char *increment(const char *ptr, size_t len)
+{
+    static std::string buf;
+    std::string input(ptr, len);
+    try
+    {
+        auto j = json::parse(input);
+        int val = j["value"];
+        json res;
+        res["origin"] = "From Mock C++: ";
+        res["value"] = val + 1;
+        buf = res.dump();
+        return buf.c_str();
+    }
+    catch (...)
+    {
+        return "{\"error\":\"invalid json\"}";
+    }
+}
 
 void app(void)
 {

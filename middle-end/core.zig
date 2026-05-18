@@ -10,9 +10,8 @@ export fn increment(ptr: [*]const u8, len: usize) [*]const u8 {
     };
     defer parsed.deinit();
 
-    // Access the array -> first item -> object -> "value" field
-    const root_array = parsed.value.array;
-    const first_arg = root_array.items[0].object;
+    // Input is now a raw JSON string of the object itself, not wrapped in an array
+    const first_arg = parsed.value.object;
     const value = first_arg.get("value").?.integer;
 
     const result = std.fmt.bufPrintZ(&buffer, "{{\"origin\":\"From Zig: \",\"value\":{d}}}", .{value + 1}) catch {
