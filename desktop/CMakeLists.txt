@@ -100,9 +100,8 @@ endif()
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
 
 if(MODE STREQUAL "release")
-	target_compile_definitions("${CMAKE_PROJECT_NAME}"
-        PUBLIC WWW_PATH="./www"
-    )
+	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC WWW_PATH="./www")
+    
 	# Macros for CPP
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC PRODUCTION_BUILD=1) 
 	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC DEVELOPMENT_BUILD=0) 

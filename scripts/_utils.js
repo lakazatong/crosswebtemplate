@@ -24,16 +24,11 @@ function getCMakeBuildType() {
 }
 
 function getCMakeConfigureCommand(s, b) {
-    return [
-        "cmake",
-        "-S " + s,
-        "-B " + b,
-        "-DCMAKE_BUILD_TYPE=" + getCMakeBuildType(),
-    ];
+    return ["cmake", "-S " + s, "-B " + b];
 }
 
 function getCMakeBuildCommand(b) {
-    return ["cmake", "--build " + b];
+    return ["cmake", "--build " + b, "--config " + getCMakeBuildType()];
 }
 
 function getZigBuildCommand(target, out, optimization, extra) {
