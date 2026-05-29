@@ -63,7 +63,7 @@ set(WEBVIEW_USE_COMPAT_MINGW OFF CACHE BOOL "" FORCE)
 set(WEBVIEW_USE_STATIC_MSVC_RUNTIME ON CACHE BOOL "" FORCE)
 # Package Consumer Options
 ## Linux-specific Options
-set(WEBVIEW_WEBKITGTK_API "4.0" CACHE STRING "" FORCE)
+set(WEBVIEW_WEBKITGTK_API "4.1" CACHE STRING "" FORCE)
 ## Windows-specific Options
 set(WEBVIEW_MSWEBVIEW2_VERSION "1.0.3650.58" CACHE STRING "" FORCE)
 set(WEBVIEW_USE_BUILTIN_MSWEBVIEW2 ON CACHE BOOL "" FORCE)
@@ -128,6 +128,8 @@ if(WIN32)
 	target_sources("${CMAKE_PROJECT_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app.rc")
 	set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
 	target_link_options(${CMAKE_PROJECT_NAME} PRIVATE "/SUBSYSTEM:WINDOWS")
+elseif(UNIX)
+    target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE "-Wl,-z,noexecstack")
 endif()
 
 target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE nlohmann_json::nlohmann_json)

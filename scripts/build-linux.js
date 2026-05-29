@@ -1,8 +1,15 @@
 #!/usr/bin/env node
 
-import { isMain, buildZig, buildCMake, buildFrontend } from "./_utils.js";
+import {
+    isMain,
+    buildDockerImage,
+    buildZig,
+    buildCMake,
+    buildFrontend,
+} from "./_utils.js";
 
 export function buildLinux() {
+    buildDockerImage("linux");
     buildZig("linux");
     buildCMake("linux");
     buildFrontend();

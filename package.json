@@ -24,11 +24,11 @@
         "export:android": "npm run build:android:release && node scripts/export-android.js",
         "android": "npm run export:android",
         "android:release": "npm run export:android",
-
+        
         "build:linux": "node scripts/build-linux.js debug",
         "build:linux:release": "node scripts/build-linux.js release",
         "export:linux": "npm run build:linux:release && node scripts/export-linux.js",
-        "linux": "npm run build:linux && ./.build/linux/cwt",
+        "linux": "npm run build:linux && ./.build/linux/Debug/cwt",
         "linux:release": "npm run export:linux && ./dist/linux/cwt"
     },
     "dependencies": {

@@ -23,15 +23,15 @@ function getCMakeBuildType() {
     return getMode() === "release" ? "Release" : "Debug";
 }
 
-function getCMakeConfigureCommand(s, b) {
-    return ["cmake", "-S " + s, "-B " + b];
+function getCMakeConfigureCommand(s, b, extra = []) {
+    return ["cmake", "-S " + s, "-B " + b, ...extra];
 }
 
 function getCMakeBuildCommand(b) {
     return ["cmake", "--build " + b, "--config " + getCMakeBuildType()];
 }
 
-function getZigBuildCommand(target, out, optimization, extra) {
+function getZigBuildCommand(target, out, optimization, extra = []) {
     return [
         "zig",
         "build-lib",
@@ -50,7 +50,7 @@ function getDockerCommand() {
         "--rm",
         `-v ${getProjectRoot()}:/app`,
         "-w /app",
-        "cwt-linux-build",
+        "linux-build",
     ];
 }
 
@@ -88,18 +88,34 @@ function getConfig(configKey) {
     }
 
     if (configKey === "linux") {
+        const dockerfile = path.join(
+            projectRoot,
+            "desktop",
+            "docker",
+            "linux-build.Dockerfile",
+        );
         return {
+            dockerBuildCommand: [
+                "docker",
+                "build",
+                "-f",
+                dockerfile,
+                "-t",
+                "linux-build",
+                projectRoot,
+            ],
             zigBuildCommand: getZigBuildCommand(
                 "x86_64-linux-gnu",
                 path.join(zigOutDir, "core.a"),
                 zigOptimization,
-                ["-static", "-fcompiler-rt"],
+                ["-static", "-fcompiler-rt", "-fPIC"],
             ),
             cmakeConfigureCommand: [
                 ...getDockerCommand(),
                 ...getCMakeConfigureCommand(
                     relativeCMakeSourceDir,
                     relativeCMakeBuildDir,
+                    ['-G "Ninja Multi-Config"'],
                 ),
             ],
             cmakeBuildCommand: [
@@ -115,7 +131,6 @@ function getConfig(configKey) {
                 "wasm32-freestanding",
                 path.join(zigOutDir, "core.wasm"),
                 zigOptimization,
-                [],
             ),
         };
     }
@@ -129,6 +144,12 @@ export function run(cmd) {
     }
     console.log(cmd);
     execSync(cmd, { stdio: "inherit" });
+}
+
+export function buildDockerImage(configKey) {
+    const config = getConfig(configKey);
+    console.log(`[${configKey}] Building Docker image...`);
+    run(config.dockerBuildCommand);
 }
 
 export function buildZig(configKey) {
