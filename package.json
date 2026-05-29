@@ -6,21 +6,30 @@
     "scripts": {
         "dev": "vite --host 127.0.0.1",
         "clean": "node scripts/clean.js",
-        "build:web": "node scripts/build-web-debug.js",
-        "build:web:release": "node scripts/build-web-release.js",
-        "build:windows": "node scripts/build-windows-debug.js",
-        "build:windows:release": "node scripts/build-windows-release.js",
-        "build:android": "node scripts/build-android-debug.js",
-        "build:android:release": "node scripts/build-android-release.js",
+
+        "build:web": "node scripts/build-web.js debug",
+        "build:web:release": "node scripts/build-web.js release",
         "export:web": "npm run build:web:release && node scripts/export-web.js",
-        "export:windows": "npm run build:windows:release && node scripts/export-windows.js",
-        "export:android": "npm run build:android:release && node scripts/export-android.js",
         "web": "npm run build:web && npx serve .build/web -p 5173",
         "web:release": "npm run export:web && npx serve dist/web -p 5173",
+
+        "build:windows": "node scripts/build-windows.js debug",
+        "build:windows:release": "node scripts/build-windows.js release",
+        "export:windows": "npm run build:windows:release && node scripts/export-windows.js",
         "windows": "npm run build:windows && .\\.build\\windows\\Debug\\cwt.exe",
         "windows:release": "npm run export:windows && .\\dist\\windows\\cwt.exe",
+
+        "build:android": "node scripts/build-android-debug.js",
+        "build:android:release": "node scripts/build-android-release.js",
+        "export:android": "npm run build:android:release && node scripts/export-android.js",
         "android": "npm run export:android",
-        "android:release": "npm run export:android"
+        "android:release": "npm run export:android",
+
+        "build:linux": "node scripts/build-linux.js debug",
+        "build:linux:release": "node scripts/build-linux.js release",
+        "export:linux": "npm run build:linux:release && node scripts/export-linux.js",
+        "linux": "npm run build:linux && ./.build/linux/cwt",
+        "linux:release": "npm run export:linux && ./dist/linux/cwt"
     },
     "dependencies": {
         "@vitejs/plugin-react": "^6.0.1",

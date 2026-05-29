@@ -13,9 +13,7 @@ let wasmExports = null;
         }
     } catch (e) {
         // If this fails, we just won't have wasmExports, which is fine for Dev/Native
-        console.debug(
-            "WASM not found or failed to load; proceeding to check other environments.",
-        );
+        console.debug("WASM not found or failed to load:", e);
     }
 })();
 
@@ -24,10 +22,17 @@ let wasmExports = null;
  * @returns {{ origin: string, value: number }}
  */
 export function increment(data) {
+    // The native webview binding transports one UTF-8 string in and one UTF-8
+    // string out. JSON is an application-level convention here, not a webview
+    // binding-layer behavior.
     if (window.bridge_increment) {
         return window
             .bridge_increment(JSON.stringify(data))
             .then((res) => JSON.parse(res));
+    }
+
+    if (wasmExports) {
+        return callZigWasm(data);
     }
 
     return {
@@ -40,11 +45,11 @@ export function increment(data) {
  * Helper to handle the string-based communication Zig expects
  */
 function callZigWasm(data) {
-    const { increment: zigFn, memory } = wasmExports;
+    const { increment, memory } = wasmExports;
 
-    // 1. Prepare input: Zig expects a JSON string
-    // Based on your core.zig, it parses an array like bridge_increment sends: [{"value": n}]
-    const inputStr = JSON.stringify([data]);
+    // 1. Prepare input: Zig expects the same app-level JSON object string used
+    // by the native desktop bridge.
+    const inputStr = JSON.stringify(data);
     const encoder = new TextEncoder();
     const encodedInput = encoder.encode(inputStr);
 
@@ -53,7 +58,7 @@ function callZigWasm(data) {
     heap.set(encodedInput, 0);
 
     // 3. Call Zig
-    const outPtr = zigFn(0, encodedInput.length);
+    const outPtr = increment(0, encodedInput.length);
 
     // 4. Read result (null-terminated string)
     let endPtr = outPtr;

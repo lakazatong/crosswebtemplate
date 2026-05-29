@@ -16,25 +16,38 @@
 
 using json = nlohmann::json;
 
-extern "C" const char *increment(const char *ptr, size_t len)
-{
-    static std::string buf;
-    std::string input(ptr, len);
-    try
-    {
-        auto j = json::parse(input);
-        int val = j["value"];
-        json res;
-        res["origin"] = "From Mock C++: ";
-        res["value"] = val + 1;
-        buf = res.dump();
-        return buf.c_str();
-    }
-    catch (...)
-    {
-        return "{\"error\":\"invalid json\"}";
-    }
-}
+// Forward declare the Zig function (or mock if not linked)
+extern "C" const char *increment(const char *ptr);
+
+// // Fallback mock implementation if Zig is not available
+// namespace
+// {
+//     __attribute__((weak)) const char *increment_mock(const char *ptr, size_t len)
+//     {
+//         static std::string buf;
+//         std::string input(ptr, len);
+//         try
+//         {
+//             auto j = json::parse(input);
+//             int val = j["value"];
+//             json res;
+//             res["origin"] = "From Mock C++: ";
+//             res["value"] = val + 1;
+//             buf = res.dump();
+//             return buf.c_str();
+//         }
+//         catch (...)
+//         {
+//             return "{\"error\":\"invalid json\"}";
+//         }
+//     }
+// }
+
+// // Weak symbol so it can be overridden by Zig
+// __attribute__((weak)) const char *increment(const char *ptr, size_t len)
+// {
+//     return increment_mock(ptr, len);
+// }
 
 void app(void)
 {
@@ -94,8 +107,11 @@ void app(void)
         w.navigate("file:///" + std::string(WWW_PATH) + "/index.html");
 #endif
 
-        w.bind("bridge_increment", [](const std::string &input)
-               { return std::string(increment(input.c_str(), input.size())); });
+        w.bind("bridge_increment", [](const std::string &input) -> std::string
+               {
+    const char *result = increment(input.c_str());
+    if (!result) return R"({"error":"null result"})";
+    return std::string(result); });
 
         w.run();
     }

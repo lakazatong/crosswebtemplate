@@ -1,10 +1,13 @@
-import { ensureDir, run } from "./_utils.js";
+#!/usr/bin/env node
 
-run("npx vite build --outDir .build/web");
+import { isMain, buildZig, buildCMake, buildFrontend } from "./_utils.js";
 
-ensureDir(".build/linux/debug");
+export function buildLinux() {
+    buildZig("linux");
+    buildCMake("linux");
+    buildFrontend();
+}
 
-// Skip Zig for now as it's not installed, we'll mock the increment function if needed
-// or just build the webview part.
-run("cmake -S desktop -B .build/linux -DCMAKE_BUILD_TYPE=Debug -DWEBVIEW_GTK=ON -DWEBVIEW_EDGE=OFF");
-run("cmake --build .build/linux --config Debug");
+if (isMain(import.meta.url)) {
+    buildLinux();
+}
