@@ -41,29 +41,41 @@ export function increment(data) {
     };
 }
 
-/**
- * Helper to handle the string-based communication Zig expects
- */
 function callZigWasm(data) {
-    const { increment, memory } = wasmExports;
-
-    // 1. Prepare input: Zig expects the same app-level JSON object string used
-    // by the native desktop bridge.
-    const inputStr = JSON.stringify(data);
     const encoder = new TextEncoder();
-    const encodedInput = encoder.encode(inputStr);
+    const inputText = JSON.stringify(data);
+    const encodedInput = encoder.encode(inputText);
 
-    // 2. Write to WASM memory (using start of heap for simplicity)
-    const heap = new Uint8Array(memory.buffer);
-    heap.set(encodedInput, 0);
+    const inputPtr = wasmExports.getInputBuffer();
+    console.log("inputPtr:", inputPtr);
+    console.log("inputText:", inputText);
+    console.log("encodedInput:", encodedInput);
 
-    // 3. Call Zig
-    const outPtr = increment(0, encodedInput.length);
+    const heap = new Uint8Array(wasmExports.memory.buffer);
+    heap.set(encodedInput, inputPtr);
+    heap[inputPtr + encodedInput.length] = 0;
 
-    // 4. Read result (null-terminated string)
+    console.log(
+        "heap at inputPtr before call:",
+        heap.slice(inputPtr, inputPtr + encodedInput.length + 1),
+    );
+
+    const outPtr = wasmExports.increment(inputPtr);
+    console.log("outPtr:", outPtr);
+
+    console.log(
+        "heap at inputPtr after call:",
+        heap.slice(inputPtr, inputPtr + 20),
+    );
+    console.log("heap at outPtr after call:", heap.slice(outPtr, outPtr + 50));
+
     let endPtr = outPtr;
     while (heap[endPtr] !== 0) endPtr++;
+    console.log("endPtr:", endPtr);
 
     const outputEncoded = heap.slice(outPtr, endPtr);
-    return JSON.parse(new TextDecoder().decode(outputEncoded));
+    const outputText = new TextDecoder().decode(outputEncoded);
+    console.log("outputText:", outputText);
+
+    return JSON.parse(outputText);
 }

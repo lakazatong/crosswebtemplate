@@ -31,10 +31,10 @@ function getCMakeBuildCommand(b) {
     return ["cmake", "--build " + b, "--config " + getCMakeBuildType()];
 }
 
-function getZigBuildCommand(target, out, optimization, extra = []) {
+function getZigBuildCommand(action, target, out, optimization, extra = []) {
     return [
         "zig",
-        "build-lib",
+        action,
         "middle-end/core.zig",
         `-O ${optimization}`,
         `-target ${target}`,
@@ -68,12 +68,13 @@ function getConfig(configKey) {
     const zigOutDir = path.join(projectRoot, ".build", "zig", configKey, mode);
     const zigOptimization = mode === "release" ? "ReleaseFast" : "Debug";
 
-    ensureDir(cmakeBuildDir);
     ensureDir(zigOutDir);
 
     if (configKey === "windows") {
+        ensureDir(cmakeBuildDir);
         return {
             zigBuildCommand: getZigBuildCommand(
+                "build-lib",
                 "x86_64-windows-msvc",
                 path.join(zigOutDir, "core.lib"),
                 zigOptimization,
@@ -88,6 +89,7 @@ function getConfig(configKey) {
     }
 
     if (configKey === "linux") {
+        ensureDir(cmakeBuildDir);
         const dockerfile = path.join(
             projectRoot,
             "desktop",
@@ -105,6 +107,7 @@ function getConfig(configKey) {
                 projectRoot,
             ],
             zigBuildCommand: getZigBuildCommand(
+                "build-lib",
                 "x86_64-linux-gnu",
                 path.join(zigOutDir, "core.a"),
                 zigOptimization,
@@ -128,9 +131,11 @@ function getConfig(configKey) {
     if (configKey === "web") {
         return {
             zigBuildCommand: getZigBuildCommand(
+                "build-exe",
                 "wasm32-freestanding",
                 path.join(zigOutDir, "core.wasm"),
                 zigOptimization,
+                ["-fno-entry", "-rdynamic"],
             ),
         };
     }

@@ -1,26 +1,30 @@
 const std = @import("std");
 
-var buffer: [512:0]u8 = undefined;
+var input_buffer: [512]u8 = undefined;
+var parse_buffer: [4096]u8 = undefined;
+var output_buffer: [512:0]u8 = undefined;
+
+export fn getInputBuffer() [*]u8 {
+    return &input_buffer;
+}
+
+fn parse(ptr: [*:0]const u8) !std.json.Parsed(std.json.Value) {
+    var fba = std.heap.FixedBufferAllocator.init(&parse_buffer);
+    return std.json.parseFromSlice(std.json.Value, fba.allocator(), std.mem.span(ptr), .{});
+}
+
+fn stringify(value: anytype) ![*:0]const u8 {
+    var fba = std.heap.FixedBufferAllocator.init(&output_buffer);
+    const result = try std.json.Stringify.valueAlloc(fba.allocator(), value, .{});
+    output_buffer[result.len] = 0;
+    return &output_buffer;
+}
 
 export fn increment(ptr: [*:0]const u8) [*:0]const u8 {
-    const input = std.mem.span(ptr);
-
-    var parsed = std.json.parseFromSlice(std.json.Value, std.heap.page_allocator, input, .{}) catch {
-        return "{\"error\":\"invalid json\"}";
-    };
+    const parsed = parse(ptr) catch return "{\"error\":\"invalid json\"}";
     defer parsed.deinit();
 
     const value = parsed.value.object.get("value").?.integer;
 
-    const result = std.json.Stringify.valueAlloc(
-        std.heap.page_allocator,
-        .{ .origin = "From Zig: ", .value = value + 1 },
-        .{},
-    ) catch return "{\"error\":\"overflow\"}";
-    defer std.heap.page_allocator.free(result);
-
-    if (result.len >= buffer.len) return "{\"error\":\"overflow\"}";
-    @memcpy(buffer[0..result.len], result);
-    buffer[result.len] = 0;
-    return &buffer;
+    return stringify(.{ .origin = "From Zig: ", .value = value + 1 }) catch "{\"error\":\"overflow\"}";
 }

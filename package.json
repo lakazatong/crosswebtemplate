@@ -10,7 +10,7 @@
         "build:web": "node scripts/build-web.js debug",
         "build:web:release": "node scripts/build-web.js release",
         "export:web": "npm run build:web:release && node scripts/export-web.js",
-        "web": "npm run build:web && npx serve .build/web -p 5173",
+        "web": "npm run build:web && npx serve .build/frontend -p 5173",
         "web:release": "npm run export:web && npx serve dist/web -p 5173",
 
         "build:windows": "node scripts/build-windows.js debug",
