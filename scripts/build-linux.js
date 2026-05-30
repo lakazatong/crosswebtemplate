@@ -9,9 +9,9 @@ import {
 } from "./_utils.js";
 
 export function buildLinux() {
-    buildDockerImage("linux");
-    buildZig("linux");
-    buildCMake("linux");
+    buildDockerImage();
+    buildZig();
+    buildCMake();
     buildFrontend();
 }
 

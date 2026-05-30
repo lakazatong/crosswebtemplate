@@ -3,7 +3,7 @@
 import { isMain, buildZig, buildFrontend } from "./_utils.js";
 
 export function buildWeb() {
-    buildZig("web");
+    buildZig();
     buildFrontend();
 }
 

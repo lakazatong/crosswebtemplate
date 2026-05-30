@@ -6,19 +6,19 @@
     "scripts": {
         "dev": "vite --host 127.0.0.1",
         "clean": "node scripts/clean.js",
-
+        
         "build:web": "node scripts/build-web.js debug",
         "build:web:release": "node scripts/build-web.js release",
         "export:web": "npm run build:web:release && node scripts/export-web.js",
-        "web": "npm run build:web && npx serve .build/frontend -p 5173",
-        "web:release": "npm run export:web && npx serve dist/web -p 5173",
-
+        "web": "npm run build:web && node scripts/serve-web.js",
+        "web:release": "npm run export:web && node scripts/serve-web.js release",
+        
         "build:windows": "node scripts/build-windows.js debug",
         "build:windows:release": "node scripts/build-windows.js release",
         "export:windows": "npm run build:windows:release && node scripts/export-windows.js",
         "windows": "npm run build:windows && .\\.build\\windows\\Debug\\cwt.exe",
         "windows:release": "npm run export:windows && .\\dist\\windows\\cwt.exe",
-
+        
         "build:android": "node scripts/build-android-debug.js",
         "build:android:release": "node scripts/build-android-release.js",
         "export:android": "npm run build:android:release && node scripts/export-android.js",
@@ -33,8 +33,12 @@
     },
     "dependencies": {
         "@vitejs/plugin-react": "^6.0.1",
+        "chalk": "^5.6.2",
+        "clipboardy": "^5.3.1",
+        "express": "^5.2.1",
         "react": "^19.2.6",
         "react-dom": "^19.2.6",
+        "strip-ansi": "^7.2.0",
         "vite": "^8.0.12"
     }
 }

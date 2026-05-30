@@ -1,4 +1,4 @@
-import { ensureDir, run } from "./_utils.js";
+import { ensureDir } from "./_utils.js";
 import { cpSync } from "fs";
 
 ensureDir("dist/windows");

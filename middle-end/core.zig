@@ -22,7 +22,6 @@ fn stringify(value: anytype) ![*:0]const u8 {
 
 export fn increment(ptr: [*:0]const u8) [*:0]const u8 {
     const parsed = parse(ptr) catch return "{\"error\":\"invalid json\"}";
-    defer parsed.deinit();
 
     const value = parsed.value.object.get("value").?.integer;
 

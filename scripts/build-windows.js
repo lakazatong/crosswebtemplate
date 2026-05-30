@@ -3,8 +3,8 @@
 import { isMain, buildZig, buildCMake, buildFrontend } from "./_utils.js";
 
 export function buildWindows() {
-    buildZig("windows");
-    buildCMake("windows");
+    buildZig();
+    buildCMake();
     buildFrontend();
 }
 

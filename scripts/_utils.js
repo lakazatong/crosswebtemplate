@@ -11,12 +11,16 @@ export function isMain(url) {
     return url === `file:///${process.argv[1]}`.replaceAll("\\", "/");
 }
 
-export function getProjectRoot() {
-    return projectRoot;
+export function ensureDir(dirPath) {
+    mkdirSync(dirPath, { recursive: true });
 }
 
 export function getMode() {
     return process.argv[2] === "release" ? "release" : "debug";
+}
+
+export function getProjectRoot() {
+    return projectRoot;
 }
 
 function getCMakeBuildType() {
@@ -54,11 +58,27 @@ function getDockerCommand() {
     ];
 }
 
-export function ensureDir(dirPath) {
-    mkdirSync(dirPath, { recursive: true });
+function getFrontendBuildCommand() {
+    const buildDir = path.join(projectRoot, ".build", "frontend");
+    return ["vite", "build", `--outDir ${buildDir}`];
 }
 
-function getConfig(configKey) {
+function getConfigKey() {
+    const script = path.basename(process.argv[1], ".js");
+    // build-windows.js -> "windows", build-linux.js -> "linux", etc.
+    const match = script.match(/build-(\w+)/);
+    return match ? match[1] : null;
+}
+
+function getConfig() {
+    const configKey = getConfigKey();
+
+    if (!configKey) {
+        throw Error(
+            `getConfig only make sense when called from a build-*.js script`,
+        );
+    }
+
     const relativeCMakeSourceDir = "desktop";
     const relativeCMakeBuildDir = path.join(".build", configKey);
     const cmakeSourceDir = path.join(projectRoot, relativeCMakeSourceDir);
@@ -70,9 +90,11 @@ function getConfig(configKey) {
 
     ensureDir(zigOutDir);
 
+    let config = null;
+
     if (configKey === "windows") {
         ensureDir(cmakeBuildDir);
-        return {
+        config = {
             zigBuildCommand: getZigBuildCommand(
                 "build-lib",
                 "x86_64-windows-msvc",
@@ -90,18 +112,17 @@ function getConfig(configKey) {
 
     if (configKey === "linux") {
         ensureDir(cmakeBuildDir);
-        const dockerfile = path.join(
-            projectRoot,
-            "desktop",
-            "docker",
-            "linux-build.Dockerfile",
-        );
-        return {
+        config = {
             dockerBuildCommand: [
                 "docker",
                 "build",
                 "-f",
-                dockerfile,
+                path.join(
+                    projectRoot,
+                    "desktop",
+                    "docker",
+                    "linux-build.Dockerfile",
+                ),
                 "-t",
                 "linux-build",
                 projectRoot,
@@ -129,7 +150,7 @@ function getConfig(configKey) {
     }
 
     if (configKey === "web") {
-        return {
+        config = {
             zigBuildCommand: getZigBuildCommand(
                 "build-exe",
                 "wasm32-freestanding",
@@ -140,10 +161,16 @@ function getConfig(configKey) {
         };
     }
 
-    throw Error(`Unknown configKey: ${configKey}`);
+    if (!config) {
+        throw Error(`Unknown configKey: ${configKey}`);
+    }
+
+    config.frontendBuildCommand = getFrontendBuildCommand();
+
+    return config;
 }
 
-export function run(cmd) {
+function run(cmd) {
     if (Array.isArray(cmd)) {
         cmd = cmd.join(" ");
     }
@@ -151,34 +178,36 @@ export function run(cmd) {
     execSync(cmd, { stdio: "inherit" });
 }
 
-export function buildDockerImage(configKey) {
-    const config = getConfig(configKey);
-    console.log(`[${configKey}] Building Docker image...`);
+function buildLog(msg) {
+    console.log(`[${getConfigKey()}-${getMode()}] ${msg}`);
+}
+
+export function buildDockerImage() {
+    const config = getConfig();
+    buildLog(`Building Docker image...`);
     run(config.dockerBuildCommand);
 }
 
-export function buildZig(configKey) {
-    const config = getConfig(configKey);
-    const mode = getMode();
-    console.log(`[${configKey}-${mode}] Building Zig...`);
+export function buildZig() {
+    const config = getConfig();
+    buildLog(`Building Zig...`);
     run(config.zigBuildCommand);
 }
 
-export function buildCMake(configKey) {
+export function buildCMake() {
     // We assume anyone building this template runs on Windows
     // TODO: don't assume that lol, also support Linux, then MacOS?
     // i.e. make it possible to build for windows and macos on linux
     // and build for windows and linux on macos?
-    const config = getConfig(configKey);
-    const mode = getMode();
-    console.log(`[${configKey}-${mode}] Configuring CMake...`);
+    const config = getConfig();
+    buildLog(`Configuring CMake...`);
     run(config.cmakeConfigureCommand);
-    console.log(`[${configKey}-${mode}] Building Desktop...`);
+    buildLog(`Building Desktop...`);
     run(config.cmakeBuildCommand);
 }
 
 export function buildFrontend() {
-    const buildDir = path.join(projectRoot, ".build", "frontend");
-    console.log(`Building Frontend...`);
-    run(["vite", "build", `--outDir ${buildDir}`]);
+    const config = getConfig();
+    buildLog("Building Frontend...");
+    run(config.frontendBuildCommand);
 }
