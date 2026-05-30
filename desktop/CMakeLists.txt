@@ -81,7 +81,7 @@ elseif(UNIX)
 endif()
 ## Windows-specific Options
 set(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL ON CACHE BOOL "" FORCE)
-set(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK OFF CACHE BOOL "" FORCE)
+set(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK ON CACHE BOOL "" FORCE)
 
 add_subdirectory(external/webview)
 
