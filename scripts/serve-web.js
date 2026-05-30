@@ -66,7 +66,7 @@ const networkUrl = networkIp ? `http://${networkIp}:${port}` : "unavailable";
 
 const pad = (url) => url.padEnd(22);
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
     const padLine = (content) =>
         `   │   ${content}${" ".repeat(40 - stripAnsi(content).length)}│`;
 
@@ -89,9 +89,16 @@ app.listen(port, () => {
     console.log(lines.join("\n"));
 });
 
-process.on("SIGINT", () => {
+function onSIGINT() {
+    process.off("SIGINT", onSIGINT);
+
     console.log(
         `\n ${chalk.bgMagenta(" INFO ")} Gracefully shutting down. Please wait...`,
     );
-    process.exit(0);
-});
+
+    server.close(() => {
+        process.exit(0);
+    });
+}
+
+process.on("SIGINT", onSIGINT);

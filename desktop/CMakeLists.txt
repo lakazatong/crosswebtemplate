@@ -1,26 +1,33 @@
 cmake_minimum_required(VERSION 3.16)
+project(cwt LANGUAGES CXX)
+
+if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
+    message(FATAL_ERROR "Only Ninja is supported")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(BUILD_ROOT "${CMAKE_SOURCE_DIR}/../.build")
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
+endif()
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-project(cwt LANGUAGES CXX)
-
-set(CMAKE_MSVC_RUNTIME_LIBRARY
-    "$<$<CONFIG:Release>:MultiThreaded>$<$<CONFIG:Debug>:MultiThreadedDebug>"
-)
-
-if(MSVC)
-	add_compile_options(/arch:AVX2) # make sure SIMD optimizations take place
-	add_compile_options(/utf-8)
-endif()
-
 if(WIN32)
     enable_language(RC)
+
+	add_compile_options(/arch:AVX2) # make sure SIMD optimizations take place
+	add_compile_options(/utf-8)
+
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDebug)
+    else()
+        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+    endif()
 endif()
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
@@ -53,7 +60,7 @@ set(WEBVIEW_USE_STATIC_MSVC_RUNTIME ON CACHE BOOL "" FORCE)
 ## Linux-specific Options
 set(WEBVIEW_WEBKITGTK_API "4.1" CACHE STRING "" FORCE)
 ## Windows-specific Options
-set(WEBVIEW_MSWEBVIEW2_VERSION "1.0.3650.58" CACHE STRING "" FORCE)
+set(WEBVIEW_MSWEBVIEW2_VERSION "1.0.3967.48" CACHE STRING "" FORCE)
 set(WEBVIEW_USE_BUILTIN_MSWEBVIEW2 ON CACHE BOOL "" FORCE)
 # Compile-time Options
 ## C API Linkage
@@ -76,33 +83,31 @@ endif()
 set(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL ON CACHE BOOL "" FORCE)
 set(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(external/json)
 add_subdirectory(external/webview)
 
 if(WIN32)
     add_executable("${CMAKE_PROJECT_NAME}" WIN32)
+    target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC _CRT_SECURE_NO_WARNINGS)
 else()
     add_executable("${CMAKE_PROJECT_NAME}")
 endif()
 
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
 
-target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(MODE "release")
+    target_compile_definitions("${CMAKE_PROJECT_NAME}" PRIVATE PRODUCTION_BUILD=1)
+    target_compile_definitions("${CMAKE_PROJECT_NAME}" PRIVATE DEVELOPMENT_BUILD=0)
     # WWW_PATH is deduced from the executable path at runtime
-    $<$<CONFIG:Release>:PRODUCTION_BUILD=1>
-    $<$<CONFIG:Release>:DEVELOPMENT_BUILD=0>
-
-    $<$<NOT:$<CONFIG:Release>>:WWW_PATH="${BUILD_ROOT}/frontend">
-    $<$<NOT:$<CONFIG:Release>>:PRODUCTION_BUILD=0>
-    $<$<NOT:$<CONFIG:Release>>:DEVELOPMENT_BUILD=1>
-)
-
-if(MSVC)
-    target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC _CRT_SECURE_NO_WARNINGS)
+else()
+    set(MODE "debug")
+    target_compile_definitions("${CMAKE_PROJECT_NAME}" PRIVATE PRODUCTION_BUILD=0)
+    target_compile_definitions("${CMAKE_PROJECT_NAME}" PRIVATE DEVELOPMENT_BUILD=1)
+    target_compile_definitions("${CMAKE_PROJECT_NAME}" PRIVATE WWW_PATH="${BUILD_ROOT}/frontend")
 endif()
 
-target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
 target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/json/include/")
+target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/webview/core/include/")
 
 if(WIN32)
 	set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES WIN32_EXECUTABLE TRUE)
@@ -124,22 +129,18 @@ endif()
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES} )
 
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE webview::core_static)
-
-set(BASE_LIBS "")
-
-if(WIN32)
-    list(APPEND BASE_LIBS ntdll.lib synchronization.lib)
-endif()
 
 string(TOLOWER "${CMAKE_SYSTEM_NAME}" SYSTEM_NAME_LOWER)
 
-set(ZIG_LIB_WIN "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/$<LOWER_CASE:$<CONFIG>>/core.lib")
-set(ZIG_LIB_UNIX "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/$<LOWER_CASE:$<CONFIG>>/core.a")
-
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
-    ${BASE_LIBS}
-    $<$<PLATFORM_ID:Windows>:${ZIG_LIB_WIN}>
-    $<$<NOT:$<PLATFORM_ID:Windows>>:${ZIG_LIB_UNIX}>
-)
+if(WIN32)
+    target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE
+        ntdll.lib
+        synchronization.lib
+        "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/${MODE}/core.lib"
+    )
+else(UNIX)
+    target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE
+        "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/${MODE}/core.a"
+    )
+endif()

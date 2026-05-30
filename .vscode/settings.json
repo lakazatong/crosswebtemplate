@@ -1,0 +1,15 @@
+{
+    // Change to linux or macos if not on windows
+    "C_Cpp.default.compileCommands": ".build/windows/debug/compile_commands.json",
+    "C_Cpp.default.includePath": [
+        "desktop/external/webview/core/include",
+        "desktop/external/json/include"
+    ],
+    "C_Cpp.default.browse.path": [
+        "desktop/external/webview/core/include",
+        "desktop/external/json/include"
+    ],
+    "files.associations": {
+        "*.code-workspace.source": "jsonc"
+    }
+}

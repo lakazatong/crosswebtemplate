@@ -7,15 +7,13 @@
 #ifndef _WIN32
 #include "httplib/httplib.h"
 #endif /* _WIN32 */
-#include "nlohmann/json.hpp"
+#include "json/json.hpp"
 #include "webview/webview.h"
 
 // native
 #ifdef _WIN32
 #include <windows.h>
-#include <WebView2.h>
 #include <wrl.h>
-// #include <wrl/client.h>
 #else /* _WIN32 */
 #include <filesystem>
 #include <gtk/gtk.h>

@@ -27,12 +27,28 @@ function getCMakeBuildType() {
     return getMode() === "release" ? "Release" : "Debug";
 }
 
+function cmdWithMSVC(cmd) {
+    return [
+        '"C:\\Program Files (x86)\\Microsoft Visual Studio\\18\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat" x64',
+        "&&",
+        ...cmd,
+    ];
+}
+
 function getCMakeConfigureCommand(s, b, extra = []) {
-    return ["cmake", "-S " + s, "-B " + b, ...extra];
+    return [
+        "cmake",
+        `-S ${s}`,
+        `-B ${b}`,
+        "-G Ninja",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        `-DCMAKE_BUILD_TYPE=${getCMakeBuildType()}`,
+        ...extra,
+    ];
 }
 
 function getCMakeBuildCommand(b) {
-    return ["cmake", "--build " + b, "--config " + getCMakeBuildType()];
+    return ["cmake", "--build " + b];
 }
 
 function getZigBuildCommand(action, target, out, optimization, extra = []) {
@@ -79,12 +95,13 @@ function getConfig() {
         );
     }
 
+    const mode = getMode();
+
     const relativeCMakeSourceDir = "desktop";
-    const relativeCMakeBuildDir = path.join(".build", configKey);
+    const relativeCMakeBuildDir = path.join(".build", configKey, mode);
     const cmakeSourceDir = path.join(projectRoot, relativeCMakeSourceDir);
     const cmakeBuildDir = path.join(projectRoot, relativeCMakeBuildDir);
 
-    const mode = getMode();
     const zigOutDir = path.join(projectRoot, ".build", "zig", configKey, mode);
     const zigOptimization = mode === "release" ? "ReleaseFast" : "Debug";
 
@@ -94,6 +111,7 @@ function getConfig() {
 
     if (configKey === "windows") {
         ensureDir(cmakeBuildDir);
+
         config = {
             zigBuildCommand: getZigBuildCommand(
                 "build-lib",
@@ -102,11 +120,10 @@ function getConfig() {
                 zigOptimization,
                 ["-static", "-fcompiler-rt"],
             ),
-            cmakeConfigureCommand: getCMakeConfigureCommand(
-                cmakeSourceDir,
-                cmakeBuildDir,
+            cmakeConfigureCommand: cmdWithMSVC(
+                getCMakeConfigureCommand(cmakeSourceDir, cmakeBuildDir),
             ),
-            cmakeBuildCommand: getCMakeBuildCommand(cmakeBuildDir),
+            cmakeBuildCommand: cmdWithMSVC(getCMakeBuildCommand(cmakeBuildDir)),
             frontendBuildCommand: getFrontendBuildCommand("desktop"),
         };
     }
@@ -140,7 +157,6 @@ function getConfig() {
                 ...getCMakeConfigureCommand(
                     relativeCMakeSourceDir,
                     relativeCMakeBuildDir,
-                    ['-G "Ninja Multi-Config"'],
                 ),
             ],
             cmakeBuildCommand: [
@@ -172,9 +188,7 @@ function getConfig() {
 }
 
 function run(cmd) {
-    if (Array.isArray(cmd)) {
-        cmd = cmd.join(" ");
-    }
+    if (Array.isArray(cmd)) cmd = cmd.join(" ");
     console.log(cmd);
     execSync(cmd, { stdio: "inherit" });
 }

@@ -3,5 +3,4 @@ package-lock.json
 .gradle/
 node_modules/
 dist/
-desktop/external/json
 dump.ps1

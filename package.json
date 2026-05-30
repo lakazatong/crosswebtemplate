@@ -7,29 +7,33 @@
         "dev": "vite --host 127.0.0.1",
         "clean": "node scripts/clean.js",
         
+        "build:windows": "node scripts/build-windows.js",
+        "build:windows:release": "node scripts/build-windows.js release",
+        "export:windows": "npm run build:windows:release && node scripts/export-windows.js",
+        "windows": "npm run build:windows && .\\.build\\windows\\debug\\cwt.exe",
+        "windows:release": "npm run export:windows && .\\dist\\windows\\cwt.exe",
+        
+        "build:linux": "node scripts/build-linux.js",
+        "build:linux:release": "node scripts/build-linux.js release",
+        "export:linux": "npm run build:linux:release && node scripts/export-linux.js",
+        "linux": "npm run build:linux && ./.build/linux/Debug/cwt",
+        "linux:release": "npm run export:linux && ./dist/linux/cwt",
+        
         "build:web": "node scripts/build-web.js",
         "build:web:release": "node scripts/build-web.js release",
         "export:web": "npm run build:web:release && node scripts/export-web.js",
         "web": "npm run build:web && node scripts/serve-web.js",
         "web:release": "npm run export:web && node scripts/serve-web.js release",
         
-        "build:windows": "node scripts/build-windows.js",
-        "build:windows:release": "node scripts/build-windows.js release",
-        "export:windows": "npm run build:windows:release && node scripts/export-windows.js",
-        "windows": "npm run build:windows && .\\.build\\windows\\Debug\\cwt.exe",
-        "windows:release": "npm run export:windows && .\\dist\\windows\\cwt.exe",
-        
-        "build:android": "node scripts/build-android-debug.js",
-        "build:android:release": "node scripts/build-android-release.js",
+        "build:android": "node scripts/build-android.js",
+        "build:android:release": "node scripts/build-android.js release",
         "export:android": "npm run build:android:release && node scripts/export-android.js",
-        "android": "npm run export:android",
+        "android": "npm run build:android",
         "android:release": "npm run export:android",
-        
-        "build:linux": "node scripts/build-linux.js",
-        "build:linux:release": "node scripts/build-linux.js release",
-        "export:linux": "npm run build:linux:release && node scripts/export-linux.js",
-        "linux": "npm run build:linux && ./.build/linux/Debug/cwt",
-        "linux:release": "npm run export:linux && ./dist/linux/cwt"
+
+        "build:all": "npm run build:windows && npm run build:linux && npm run build:web",
+        "build:all:release": "npm run build:windows:release && npm run build:linux:release && npm run build:web:release",
+        "export:all": "npm run export:windows && npm run export:linux && npm run export:web"
     },
     "dependencies": {
         "@vitejs/plugin-react": "^6.0.1",
