@@ -11,20 +11,16 @@ else()
     message(FATAL_ERROR "Unknown platform")
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(MODE "release")
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded")  # static release
-else(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(MODE "debug")
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreadedDebug")  # static debug
-endif()
-
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(cwt LANGUAGES CXX)
+
+set(CMAKE_MSVC_RUNTIME_LIBRARY
+    "$<$<CONFIG:Release>:MultiThreaded>$<$<CONFIG:Debug>:MultiThreadedDebug>"
+)
 
 if(MSVC)
 	add_compile_options(/arch:AVX2) # make sure SIMD optimizations take place
@@ -99,19 +95,15 @@ endif()
 
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
 
-if(MODE STREQUAL "release")
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC WWW_PATH="./www")
-    
-	# Macros for CPP
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC PRODUCTION_BUILD=1) 
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC DEVELOPMENT_BUILD=0) 
-else()
-    target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC WWW_PATH="${BUILD_ROOT}/frontend")
-	
-	# Macros for CPP
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC PRODUCTION_BUILD=0) 
-	target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC DEVELOPMENT_BUILD=1) 
-endif()
+target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
+    $<$<CONFIG:Release>:WWW_PATH="./www">
+    $<$<CONFIG:Release>:PRODUCTION_BUILD=1>
+    $<$<CONFIG:Release>:DEVELOPMENT_BUILD=0>
+
+    $<$<NOT:$<CONFIG:Release>>:WWW_PATH="${BUILD_ROOT}/frontend">
+    $<$<NOT:$<CONFIG:Release>>:PRODUCTION_BUILD=0>
+    $<$<NOT:$<CONFIG:Release>>:DEVELOPMENT_BUILD=1>
+)
 
 if(MSVC)
     target_compile_definitions("${CMAKE_PROJECT_NAME}" PUBLIC _CRT_SECURE_NO_WARNINGS)
@@ -143,13 +135,11 @@ endif()
 
 string(TOLOWER "${CMAKE_SYSTEM_NAME}" SYSTEM_NAME_LOWER)
 
-if(WIN32)
-    set(ZIG_LIB "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/${MODE}/core.lib")
-elseif(UNIX)
-    set(ZIG_LIB "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/${MODE}/core.a")
-endif()
+set(ZIG_LIB_WIN "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/$<LOWER_CASE:$<CONFIG>>/core.lib")
+set(ZIG_LIB_UNIX "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/$<LOWER_CASE:$<CONFIG>>/core.a")
 
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     ${BASE_LIBS}
-    "${ZIG_LIB}"
+    $<$<PLATFORM_ID:Windows>:${ZIG_LIB_WIN}>
+    $<$<NOT:$<PLATFORM_ID:Windows>>:${ZIG_LIB_UNIX}>
 )

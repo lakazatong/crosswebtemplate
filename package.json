@@ -7,13 +7,13 @@
         "dev": "vite --host 127.0.0.1",
         "clean": "node scripts/clean.js",
         
-        "build:web": "node scripts/build-web.js debug",
+        "build:web": "node scripts/build-web.js",
         "build:web:release": "node scripts/build-web.js release",
         "export:web": "npm run build:web:release && node scripts/export-web.js",
         "web": "npm run build:web && node scripts/serve-web.js",
         "web:release": "npm run export:web && node scripts/serve-web.js release",
         
-        "build:windows": "node scripts/build-windows.js debug",
+        "build:windows": "node scripts/build-windows.js",
         "build:windows:release": "node scripts/build-windows.js release",
         "export:windows": "npm run build:windows:release && node scripts/export-windows.js",
         "windows": "npm run build:windows && .\\.build\\windows\\Debug\\cwt.exe",
@@ -25,7 +25,7 @@
         "android": "npm run export:android",
         "android:release": "npm run export:android",
         
-        "build:linux": "node scripts/build-linux.js debug",
+        "build:linux": "node scripts/build-linux.js",
         "build:linux:release": "node scripts/build-linux.js release",
         "export:linux": "npm run build:linux:release && node scripts/export-linux.js",
         "linux": "npm run build:linux && ./.build/linux/Debug/cwt",
