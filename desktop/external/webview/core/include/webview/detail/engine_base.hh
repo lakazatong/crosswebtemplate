@@ -136,12 +136,15 @@ window.__webview__.onUnbind(" +
   noresult terminate() { return terminate_impl(); }
   noresult dispatch(std::function<void()> f) { return dispatch_impl(f); }
   noresult set_title(const std::string &title) { return set_title_impl(title); }
+  noresult set_title_bar(int b) { return set_title_bar_impl(b); }
 
   noresult set_size(int width, int height, webview_hint_t hints) {
     auto res = set_size_impl(width, height, hints);
     m_is_size_set = true;
     return res;
   }
+
+  noresult start_dragging() { return start_dragging_impl(); };
 
   noresult set_html(const std::string &html) { return set_html_impl(html); }
 
@@ -161,8 +164,10 @@ protected:
   virtual noresult terminate_impl() = 0;
   virtual noresult dispatch_impl(std::function<void()> f) = 0;
   virtual noresult set_title_impl(const std::string &title) = 0;
+  virtual noresult set_title_bar_impl(int b) = 0;
   virtual noresult set_size_impl(int width, int height,
                                  webview_hint_t hints) = 0;
+  virtual noresult start_dragging_impl() = 0;
   virtual noresult set_html_impl(const std::string &html) = 0;
   virtual noresult eval_impl(const std::string &js) = 0;
 

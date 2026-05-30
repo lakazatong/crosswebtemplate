@@ -39,7 +39,7 @@ function getZigBuildCommand(action, target, out, optimization, extra = []) {
     return [
         "zig",
         action,
-        "middle-end/core.zig",
+        "src/middle-end/core.zig",
         `-O ${optimization}`,
         `-target ${target}`,
         ...extra,
@@ -58,9 +58,9 @@ function getDockerCommand() {
     ];
 }
 
-function getFrontendBuildCommand() {
+function getFrontendBuildCommand(platform) {
     const buildDir = path.join(projectRoot, ".build", "frontend");
-    return ["vite", "build", `--outDir ${buildDir}`];
+    return ["vite", "build", `--outDir ${buildDir}`, `--mode ${platform}`];
 }
 
 function getConfigKey() {
@@ -107,6 +107,7 @@ function getConfig() {
                 cmakeBuildDir,
             ),
             cmakeBuildCommand: getCMakeBuildCommand(cmakeBuildDir),
+            frontendBuildCommand: getFrontendBuildCommand("desktop"),
         };
     }
 
@@ -146,6 +147,7 @@ function getConfig() {
                 ...getDockerCommand(),
                 ...getCMakeBuildCommand(relativeCMakeBuildDir),
             ],
+            frontendBuildCommand: getFrontendBuildCommand("desktop"),
         };
     }
 
@@ -158,14 +160,13 @@ function getConfig() {
                 zigOptimization,
                 ["-fno-entry", "-rdynamic"],
             ),
+            frontendBuildCommand: getFrontendBuildCommand("web"),
         };
     }
 
     if (!config) {
         throw Error(`Unknown configKey: ${configKey}`);
     }
-
-    config.frontendBuildCommand = getFrontendBuildCommand();
 
     return config;
 }

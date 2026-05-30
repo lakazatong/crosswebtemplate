@@ -19,45 +19,31 @@ using json = nlohmann::json;
 // Forward declare the Zig function (or mock if not linked)
 extern "C" const char *increment(const char *ptr);
 
-// // Fallback mock implementation if Zig is not available
-// namespace
-// {
-//     __attribute__((weak)) const char *increment_mock(const char *ptr, size_t len)
-//     {
-//         static std::string buf;
-//         std::string input(ptr, len);
-//         try
-//         {
-//             auto j = json::parse(input);
-//             int val = j["value"];
-//             json res;
-//             res["origin"] = "From Mock C++: ";
-//             res["value"] = val + 1;
-//             buf = res.dump();
-//             return buf.c_str();
-//         }
-//         catch (...)
-//         {
-//             return "{\"error\":\"invalid json\"}";
-//         }
-//     }
-// }
-
-// // Weak symbol so it can be overridden by Zig
-// __attribute__((weak)) const char *increment(const char *ptr, size_t len)
-// {
-//     return increment_mock(ptr, len);
-// }
-
 void app(void)
 {
     try
     {
         webview::webview w(DEVELOPMENT_BUILD == 1, nullptr);
-        w.set_title("Cross Web Template");
+        w.set_title_bar(0);
         w.set_size(1280, 720, WEBVIEW_HINT_NONE);
 
 #ifdef _WIN32
+        HWND hwnd = static_cast<HWND>(webview_get_native_handle(
+            reinterpret_cast<webview_t>(&w),
+            WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW));
+
+        if (hwnd)
+        {
+            HICON icon = static_cast<HICON>(LoadImageA(
+                GetModuleHandleA(NULL),
+                "IDI_APP_ICON",
+                IMAGE_ICON,
+                0, 0,
+                LR_DEFAULTSIZE | LR_SHARED));
+            SendMessage(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(icon));
+            SendMessage(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(icon));
+        }
+
         // 1. Use the C API to get the BROWSER_CONTROLLER handle
         // We cast 'w' to webview_t (which is what the C API expects)
         auto *controller = static_cast<ICoreWebView2Controller *>(
@@ -79,14 +65,14 @@ void app(void)
                     std::string rawPath = WWW_PATH;
                     // Helper to convert std::string to std::wstring
                     webPath = std::wstring(rawPath.begin(), rawPath.end());
-#else
+#else  /* DEVELOPMENT_BUILD == 1 */
                     wchar_t exePath[MAX_PATH];
                     if (GetModuleFileNameW(NULL, exePath, MAX_PATH))
                     {
                         PathRemoveFileSpecW(exePath);
                         webPath = std::wstring(exePath) + L"\\www";
                     }
-#endif
+#endif /* DEVELOPMENT_BUILD == 1 */
                     // 4. Set the mapping
                     webview3->SetVirtualHostNameToFolderMapping(
                         L"app.local",
@@ -96,22 +82,49 @@ void app(void)
                     // 5. Navigate to the virtual domain
                     w.navigate("http://app.local/index.html");
                 }
+                else
+                {
+                    w.navigate("data:text/html,<h1>Failed to cast to Interface 3</h1>");
+                }
+            }
+            else
+            {
+                w.navigate("data:text/html,<h1>Failed to get the WebView2 engine from the controller</h1>");
             }
         }
         else
         {
             w.navigate("data:text/html,<h1>Failed to initialize WebView2 Controller</h1>");
         }
-#else
-        // Linux/Mac fallback
+#else /* _WIN32 */
+#if DEVELOPMENT_BUILD == 1
         w.navigate("file:///" + std::string(WWW_PATH) + "/index.html");
-#endif
+#else  /* DEVELOPMENT_BUILD == 1 */
+        char exePath[4096];
+        ssize_t len = readlink("/proc/self/exe", exePath, sizeof(exePath) - 1);
+        if (len != -1)
+        {
+            exePath[len] = '\0';
+            std::string exeDir = std::string(exePath);
+            exeDir = exeDir.substr(0, exeDir.find_last_of('/'));
+            w.navigate("file:///" + exeDir + "/www/index.html");
+        }
+        else
+        {
+            w.navigate("data:text/html,<h1>readlink failed</h1>");
+        }
+#endif /* DEVELOPMENT_BUILD == 1 */
+#endif /* _WIN32 */
 
+        w.bind("start_dragging", [&](const std::string &input) -> std::string
+               { 
+                w.start_dragging();
+                return R"({})"; });
         w.bind("bridge_increment", [](const std::string &input) -> std::string
                {
-    const char *result = increment(input.c_str());
-    if (!result) return R"({"error":"null result"})";
-    return std::string(result); });
+            const char *result = increment(input.c_str());
+            if (!result) return R"({"error":"null result"})";
+            return std::string(result); });
 
         w.run();
     }

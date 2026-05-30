@@ -412,6 +412,19 @@ protected:
     return {};
   }
 
+  noresult set_title_bar_impl(int b) override {
+    auto style = GetWindowLong(m_window, GWL_STYLE);
+    if (b == 0) {
+      style &= ~(WS_CAPTION);
+    } else {
+      style |= (WS_CAPTION);
+    }
+    SetWindowLong(m_window, GWL_STYLE, style);
+    SetWindowPos(m_window, nullptr, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+    return {};
+  }
+
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
     auto style = GetWindowLong(m_window, GWL_STYLE);
     if (hints == WEBVIEW_HINT_FIXED) {
@@ -439,6 +452,12 @@ protected:
                        SWP_FRAMECHANGED);
     }
     return window_show();
+  }
+
+  noresult start_dragging_impl() override {
+    ReleaseCapture();
+    SendMessage(m_window, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
+    return {};
   }
 
   noresult navigate_impl(const std::string &url) override {

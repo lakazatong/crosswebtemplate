@@ -96,7 +96,7 @@ endif()
 set_property(TARGET "${CMAKE_PROJECT_NAME}" PROPERTY CXX_STANDARD 17)
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
-    $<$<CONFIG:Release>:WWW_PATH="./www">
+    # WWW_PATH is deduced from the executable path at runtime
     $<$<CONFIG:Release>:PRODUCTION_BUILD=1>
     $<$<CONFIG:Release>:DEVELOPMENT_BUILD=0>
 
@@ -116,11 +116,19 @@ target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURC
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES} )
 
+
 if(WIN32)
-	target_sources("${CMAKE_PROJECT_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app.rc")
-	set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
-	target_link_options(${CMAKE_PROJECT_NAME} PRIVATE "/SUBSYSTEM:WINDOWS")
+	target_sources("${CMAKE_PROJECT_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/resources/windows/resources.rc")
+	set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES WIN32_EXECUTABLE TRUE)
+	target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE "/SUBSYSTEM:WINDOWS")
+elseif(APPLE)
+    # set(MACOSX_BUNDLE TRUE)
+    # set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES
+    #     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/mac/Info.plist
+    # )
 elseif(UNIX)
+    install(FILES packaging/app.desktop DESTINATION share/applications)
+    install(FILES assets/icon.png DESTINATION share/pixmaps)
     target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE "-Wl,-z,noexecstack")
 endif()
 

@@ -18,8 +18,42 @@ body {
     color: #14171f;
 }
 
+.app {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.app.desktop .titlebar {
+    height: 32px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+
+    background: #e9edf5;
+    border-bottom: 1px solid #cfd6e4;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.title {
+    flex: 1;
+}
+
+.window-controls {
+    display: flex;
+}
+
+.window-controls button {
+    width: 46px;
+    height: 32px;
+    border: none;
+    background: transparent;
+}
+
 .screen {
-    min-height: 100%;
+    flex: 1;
     display: grid;
     place-content: center;
     justify-items: center;

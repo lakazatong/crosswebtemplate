@@ -1,8 +1,8 @@
-import { wasmExports, callZigWasm, callNative } from "./bridge.js";
+import { wasmExports, callWasm, callNative } from "./bridge.js";
 
 function register(fn_name, fn) {
     return (data) => {
-        if (wasmExports) return callZigWasm(fn_name, data);
+        if (wasmExports) return callWasm(fn_name, data);
         if (window[`bridge_${fn_name}`]) return callNative(fn_name, data);
         return fn(data);
     };

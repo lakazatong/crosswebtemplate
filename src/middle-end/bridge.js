@@ -1,20 +1,45 @@
 export let wasmExports = null;
 
-(async () => {
+async function loadWasm() {
+    const response = await fetch("/core.wasm");
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    const mime = response.headers.get("content-type") || "";
+
     try {
-        const response = await fetch("/core.wasm");
-        if (response.ok) {
+        if (
+            WebAssembly.instantiateStreaming &&
+            mime.includes("application/wasm")
+        ) {
             const { instance } =
                 await WebAssembly.instantiateStreaming(response);
+
             wasmExports = instance.exports;
-            console.log("Zig WASM loaded successfully.");
-        } else {
-            console.debug("WASM not found:", response);
+            console.log("WASM loaded successfully.");
+            return;
         }
+
+        const buffer = await response.arrayBuffer();
+        const { instance } = await WebAssembly.instantiate(buffer);
+
+        wasmExports = instance.exports;
+        console.log("WASM loaded successfully.");
     } catch (e) {
         console.debug("WASM failed to load:", e);
     }
-})();
+}
+
+// by dev we mean `npm run dev`
+if (!import.meta.env.DEV && __PLATFORM__ === "web") {
+    try {
+        loadWasm();
+    } catch (e) {
+        console.debug("WASM failed to load:", e);
+    }
+}
 
 function writeString(str) {
     const encoded = new TextEncoder().encode(str);
@@ -32,7 +57,7 @@ function readString(ptr) {
     return new TextDecoder().decode(heap.slice(ptr, end));
 }
 
-export function callZigWasm(fn_name, data) {
+export function callWasm(fn_name, data) {
     const ptr = writeString(JSON.stringify(data));
     const outPtr = wasmExports[fn_name](ptr);
     return JSON.parse(readString(outPtr));

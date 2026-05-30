@@ -126,6 +126,14 @@ WEBVIEW_API void *webview_get_native_handle(webview_t w,
 WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title);
 
 /**
+ * Show or hide the title bar of the native window.
+ *
+ * @param w The webview instance.
+ * @param b 0 for hide, show otherwise.
+ */
+WEBVIEW_API webview_error_t webview_set_title_bar(webview_t w, int b);
+
+/**
  * Updates the size of the native window.
  *
  * Remarks:
@@ -143,6 +151,13 @@ WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title);
  */
 WEBVIEW_API webview_error_t webview_set_size(webview_t w, int width, int height,
                                              webview_hint_t hints);
+
+/**
+ * Updates the drag of the native window.
+ *
+ * @param w The webview instance.
+ */
+WEBVIEW_API webview_error_t webview_start_dragging(webview_t w);
 
 /**
  * Navigates webview to the given URL. URL may be a properly encoded data URI.

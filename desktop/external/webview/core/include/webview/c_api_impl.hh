@@ -175,11 +175,21 @@ WEBVIEW_API webview_error_t webview_set_title(webview_t w, const char *title) {
   return api_filter([=] { return cast_to_webview(w)->set_title(title); });
 }
 
+WEBVIEW_API webview_error_t webview_set_title_bar(webview_t w, int b) {
+  using namespace webview::detail;
+  return api_filter([=] { return cast_to_webview(w)->set_title_bar(b); });
+}
+
 WEBVIEW_API webview_error_t webview_set_size(webview_t w, int width, int height,
                                              webview_hint_t hints) {
   using namespace webview::detail;
   return api_filter(
       [=] { return cast_to_webview(w)->set_size(width, height, hints); });
+}
+
+WEBVIEW_API webview_error_t webview_start_dragging(webview_t w) {
+  using namespace webview::detail;
+  return api_filter([=] { return cast_to_webview(w)->start_dragging(); });
 }
 
 WEBVIEW_API webview_error_t webview_navigate(webview_t w, const char *url) {

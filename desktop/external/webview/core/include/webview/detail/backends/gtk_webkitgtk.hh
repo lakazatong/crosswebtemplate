@@ -180,6 +180,8 @@ protected:
     return {};
   }
 
+  noresult set_title_bar_impl(int b) override {}
+
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
     gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
     if (hints == WEBVIEW_HINT_NONE || hints == WEBVIEW_HINT_FIXED) {
@@ -193,6 +195,8 @@ protected:
     }
     return window_show();
   }
+
+  noresult start_dragging_impl() override {}
 
   noresult navigate_impl(const std::string &url) override {
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());

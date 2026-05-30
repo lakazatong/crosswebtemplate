@@ -191,6 +191,9 @@ protected:
     NSWindow_set_title(m_window, title);
     return {};
   }
+
+  noresult set_title_bar_impl(int b) override {}
+
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
     objc::autoreleasepool arp;
 
@@ -217,6 +220,9 @@ protected:
 
     return window_show();
   }
+
+  noresult start_dragging_impl() override {}
+
   noresult navigate_impl(const std::string &url) override {
     objc::autoreleasepool arp;
 
