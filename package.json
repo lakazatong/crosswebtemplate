@@ -36,6 +36,9 @@
         "export:all": "npm run export:windows && npm run export:linux && npm run export:web"
     },
     "dependencies": {
+        "@capacitor/android": "^8.3.4",
+        "@capacitor/cli": "^8.3.4",
+        "@capacitor/core": "^8.3.4",
         "@vitejs/plugin-react": "^6.0.1",
         "chalk": "^5.6.2",
         "clipboardy": "^5.3.1",
