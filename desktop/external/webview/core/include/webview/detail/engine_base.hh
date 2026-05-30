@@ -144,7 +144,9 @@ window.__webview__.onUnbind(" +
     return res;
   }
 
-  noresult start_dragging() { return start_dragging_impl(); };
+  noresult start_dragging(int button, int root_x, int root_y, int time) {
+    return start_dragging_impl(button, root_x, root_y, time);
+  };
 
   noresult set_html(const std::string &html) { return set_html_impl(html); }
 
@@ -167,7 +169,8 @@ protected:
   virtual noresult set_title_bar_impl(int b) = 0;
   virtual noresult set_size_impl(int width, int height,
                                  webview_hint_t hints) = 0;
-  virtual noresult start_dragging_impl() = 0;
+  virtual noresult start_dragging_impl(int button, int root_x, int root_y,
+                                       int time) = 0;
   virtual noresult set_html_impl(const std::string &html) = 0;
   virtual noresult eval_impl(const std::string &js) = 0;
 

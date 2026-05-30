@@ -15,13 +15,28 @@ export default function App() {
         setCount(response.value);
     }
 
-    const onDragStart = () => {
-        window.start_dragging("");
+    const onDragStart = (e) => {
+        console.log(
+            `Calling window.start_dragging with ${JSON.stringify({
+                button: e.button,
+                x: e.clientX,
+                y: e.clientY,
+                time: Date.now(),
+            })}`,
+        );
+        window.start_dragging(
+            JSON.stringify({
+                button: e.button,
+                x: e.clientX,
+                y: e.clientY,
+                time: Date.now(),
+            }),
+        );
     };
 
     return (
         <div className={`app ${__PLATFORM__}`}>
-            {__PLATFORM__ === "desktop" && (
+            {/* {__PLATFORM__ === "desktop" && (
                 <header className="titlebar" onMouseDown={onDragStart}>
                     <div className="title">CrossWebTemplate</div>
 
@@ -31,7 +46,7 @@ export default function App() {
                         <button>✕</button>
                     </div>
                 </header>
-            )}
+            )} */}
             <main className="screen">
                 <p className="value">
                     {origin}

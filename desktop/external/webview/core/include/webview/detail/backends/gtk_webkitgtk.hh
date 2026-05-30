@@ -203,8 +203,10 @@ protected:
     return window_show();
   }
 
-  noresult start_dragging_impl() override {
-    gtk_window_begin_move_drag(GTK_WINDOW(m_window), 1, 0, 0, GDK_CURRENT_TIME);
+  noresult start_dragging_impl(int button, int root_x, int root_y,
+                               int time) override {
+    gtk_window_begin_move_drag(GTK_WINDOW(m_window), button, root_x, root_y,
+                               time);
     return {};
   }
 

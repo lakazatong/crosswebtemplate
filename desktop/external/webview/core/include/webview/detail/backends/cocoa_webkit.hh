@@ -221,7 +221,8 @@ protected:
     return window_show();
   }
 
-  noresult start_dragging_impl() override {}
+  noresult start_dragging_impl(int button, int root_x, int root_y,
+                               int time) override {}
 
   noresult navigate_impl(const std::string &url) override {
     objc::autoreleasepool arp;

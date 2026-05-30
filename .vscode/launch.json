@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/.build/windows/debug/cwt.exe",
             "args": [],
-            "cwd": "${workspaceFolder}/.build/windows",
+            "cwd": "${workspaceFolder}/.build/windows/debug",
             "stopAtEntry": false,
             "console": "internalConsole"
         },

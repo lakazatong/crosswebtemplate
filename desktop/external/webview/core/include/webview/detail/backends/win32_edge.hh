@@ -454,7 +454,8 @@ protected:
     return window_show();
   }
 
-  noresult start_dragging_impl() override {
+  noresult start_dragging_impl(int button, int root_x, int root_y,
+                               int time) override {
     ReleaseCapture();
     SendMessage(m_window, WM_SYSCOMMAND, SC_MOVE | HTCAPTION, 0);
     return {};

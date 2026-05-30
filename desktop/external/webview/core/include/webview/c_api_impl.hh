@@ -187,9 +187,13 @@ WEBVIEW_API webview_error_t webview_set_size(webview_t w, int width, int height,
       [=] { return cast_to_webview(w)->set_size(width, height, hints); });
 }
 
-WEBVIEW_API webview_error_t webview_start_dragging(webview_t w) {
+WEBVIEW_API webview_error_t webview_start_dragging(webview_t w, int button,
+                                                   int root_x, int root_y,
+                                                   int time) {
   using namespace webview::detail;
-  return api_filter([=] { return cast_to_webview(w)->start_dragging(); });
+  return api_filter([=] {
+    return cast_to_webview(w)->start_dragging(button, root_x, root_y, time);
+  });
 }
 
 WEBVIEW_API webview_error_t webview_navigate(webview_t w, const char *url) {

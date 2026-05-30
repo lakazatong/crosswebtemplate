@@ -46,7 +46,7 @@ void app(void)
 {
     bool debug = DEVELOPMENT_BUILD == 1;
     webview::webview w(debug, nullptr);
-    w.set_title_bar(0);
+    // w.set_title_bar(0);
     w.set_size(1280, 720, WEBVIEW_HINT_NONE);
 
 #ifdef _WIN32
@@ -155,9 +155,21 @@ void app(void)
 #endif /* _WIN32 */
 
     w.bind("start_dragging", [&](const std::string &input) -> std::string
-           { 
-                w.start_dragging();
-                return R"({})"; });
+           {
+            json j = json::parse(input, nullptr, false);
+
+            if (j.is_discarded())
+                return R"({})";
+
+            int button = j.value("button", 0);
+            int x = j.value("x", 0);
+            int y = j.value("y", 0);
+            int time = j.value("time", 0);
+
+            w.start_dragging(button, x, y, time);
+
+            return R"({})"; });
+
     w.bind("bridge_increment", [](const std::string &input) -> std::string
            {
             const char *result = increment(input.c_str());
