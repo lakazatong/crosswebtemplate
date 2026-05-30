@@ -1,15 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 set(CMAKE_CXX_STANDARD 17)
 
-if(WIN32)
-    set(BUILD_ROOT "${CMAKE_SOURCE_DIR}/../.build")
-elseif(APPLE)
-    message(FATAL_ERROR "macOS not supported (yet)")
-elseif(UNIX)
-    set(BUILD_ROOT "/app/.build")
-else()
-    message(FATAL_ERROR "Unknown platform")
-endif()
+set(BUILD_ROOT "${CMAKE_SOURCE_DIR}/../.build")
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
@@ -112,25 +104,25 @@ endif()
 target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include/")
 target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/json/include/")
 
-# MY_SOURCES is defined to be a list of all the source files
-file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
-target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES} )
-
-
 if(WIN32)
-	target_sources("${CMAKE_PROJECT_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/resources/windows/resources.rc")
 	set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES WIN32_EXECUTABLE TRUE)
 	target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE "/SUBSYSTEM:WINDOWS")
+	target_sources("${CMAKE_PROJECT_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/resources/windows/resources.rc")
 elseif(APPLE)
     # set(MACOSX_BUNDLE TRUE)
     # set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES
     #     MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/mac/Info.plist
     # )
 elseif(UNIX)
-    install(FILES packaging/app.desktop DESTINATION share/applications)
-    install(FILES assets/icon.png DESTINATION share/pixmaps)
+    target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/external/httplib/include/") # one header library
+    # install(FILES packaging/app.desktop DESTINATION share/applications)
+    # install(FILES assets/icon.png DESTINATION share/pixmaps)
     target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE "-Wl,-z,noexecstack")
 endif()
+
+# MY_SOURCES is defined to be a list of all the source files
+file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES} )
 
 target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE webview::core_static)

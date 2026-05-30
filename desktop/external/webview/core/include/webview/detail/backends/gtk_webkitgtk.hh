@@ -180,7 +180,14 @@ protected:
     return {};
   }
 
-  noresult set_title_bar_impl(int b) override {}
+  noresult set_title_bar_impl(int b) override {
+    if (b == 0) {
+      gtk_window_set_decorated(GTK_WINDOW(m_window), FALSE);
+    } else {
+      gtk_window_set_decorated(GTK_WINDOW(m_window), TRUE);
+    }
+    return {};
+  }
 
   noresult set_size_impl(int width, int height, webview_hint_t hints) override {
     gtk_window_set_resizable(GTK_WINDOW(m_window), hints != WEBVIEW_HINT_FIXED);
@@ -196,7 +203,10 @@ protected:
     return window_show();
   }
 
-  noresult start_dragging_impl() override {}
+  noresult start_dragging_impl() override {
+    gtk_window_begin_move_drag(GTK_WINDOW(m_window), 1, 0, 0, GDK_CURRENT_TIME);
+    return {};
+  }
 
   noresult navigate_impl(const std::string &url) override {
     webkit_web_view_load_uri(WEBKIT_WEB_VIEW(m_webview), url.c_str());
