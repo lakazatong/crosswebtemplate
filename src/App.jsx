@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { increment } from "./bridge.js";
+import { increment } from "./middle-end.js";
 
 export default function App() {
     const [origin, setOrigin] = useState("");
