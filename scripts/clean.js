@@ -2,13 +2,22 @@
 // std
 import { rmSync, existsSync } from "fs";
 // internal
-import { isMain } from "./_utils.js";
+import { isMain, run } from "./_utils.js";
+
+function killAll(processName) {
+    try {
+        run(`taskkill /F /T /IM ${processName}`, { stdio: "ignore" });
+    } catch {}
+}
 
 export function clean() {
+    killAll("cwt.exe");
+
     const dirs = [
         ".build",
         "dist",
         "mobile/android/.gradle",
+        "mobile/android/.idea",
         "mobile/android/.kotlin",
         "mobile/android/app/build",
     ];
