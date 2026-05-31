@@ -1,12 +1,14 @@
+#!/usr/bin/env node
+// std
 import os from "os";
 import path from "path";
 import { createReadStream, existsSync } from "fs";
-
+// external
 import express from "express";
 import chalk from "chalk";
 import clipboardy from "clipboardy";
 import stripAnsi from "strip-ansi";
-
+// internal
 import { getMode, getProjectRoot } from "./_utils.js";
 
 const port = 5173;

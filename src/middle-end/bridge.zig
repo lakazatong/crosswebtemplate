@@ -1,7 +1,13 @@
 const std = @import("std");
 
+var input_buffer: [512]u8 = undefined;
 pub var parse_buffer: [4096]u8 = undefined;
 pub var output_buffer: [512:0]u8 = undefined;
+
+// required for WASM
+export fn getInputBuffer() [*]u8 {
+    return &input_buffer;
+}
 
 pub fn parse(ptr: [*:0]const u8) !std.json.Parsed(std.json.Value) {
     var fba = std.heap.FixedBufferAllocator.init(&parse_buffer);

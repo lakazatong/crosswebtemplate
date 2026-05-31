@@ -24,7 +24,9 @@ body {
     flex-direction: column;
 }
 
-.app.desktop .titlebar {
+.app.windows .titlebar,
+.app.linux .titlebar,
+.app.macos .titlebar {
     height: 32px;
     display: flex;
     align-items: center;

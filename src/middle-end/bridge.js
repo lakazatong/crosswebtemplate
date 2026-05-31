@@ -41,7 +41,7 @@ if (!import.meta.env.DEV && __PLATFORM__ === "web") {
     }
 }
 
-function writeString(str) {
+function writeStringWASM(str) {
     const encoded = new TextEncoder().encode(str);
     const ptr = wasmExports.getInputBuffer();
     const heap = new Uint8Array(wasmExports.memory.buffer);
@@ -50,21 +50,64 @@ function writeString(str) {
     return ptr;
 }
 
-function readString(ptr) {
+function readStringWASM(ptr) {
     const heap = new Uint8Array(wasmExports.memory.buffer);
     let end = ptr;
     while (heap[end] !== 0) end++;
     return new TextDecoder().decode(heap.slice(ptr, end));
 }
 
-export function callWasm(fn_name, data) {
-    const ptr = writeString(JSON.stringify(data));
-    const outPtr = wasmExports[fn_name](ptr);
-    return JSON.parse(readString(outPtr));
-}
+export function register(fn_name, fn) {
+    console.log(`Registering ${fn_name} for platform ${__PLATFORM__}`);
+    return (data) => {
+        console.log(`${fn_name} called on platform ${__PLATFORM__}`);
 
-export function callNative(fn_name, data) {
-    return window[`bridge_${fn_name}`](JSON.stringify(data)).then((res) =>
-        JSON.parse(res),
-    );
+        if (__PLATFORM__ === "development") {
+            return fn(data);
+        }
+
+        if (__PLATFORM__ === "web") {
+            if (!wasmExports) {
+                throw new Error("WASM not initialized");
+            }
+
+            const ptr = writeStringWASM(JSON.stringify(data));
+            const outPtr = wasmExports[fn_name](ptr);
+            return JSON.parse(readStringWASM(outPtr));
+        }
+
+        if (__PLATFORM__ === "android") {
+            const bridge = window?.AndroidBridge;
+
+            if (!bridge) {
+                throw new Error(`Android bridge not found`);
+            }
+
+            const method = bridge[`bridge_${fn_name}`];
+
+            if (!method) {
+                throw new Error(
+                    `Android bridge method not found: bridge_${fn_name}`,
+                );
+            }
+
+            return Promise.resolve(
+                method.call(bridge, JSON.stringify(data)),
+            ).then((res) => JSON.parse(res));
+        }
+
+        if (["windows", "linux"].includes(__PLATFORM__)) {
+            const bridge = window?.[`bridge_${fn_name}`];
+
+            if (!bridge) {
+                throw new Error(`Windows bridge not found: bridge_${fn_name}`);
+            }
+
+            return Promise.resolve(bridge(JSON.stringify(data))).then((res) =>
+                JSON.parse(res),
+            );
+        }
+
+        throw new Error(`Unknown platform: ${__PLATFORM__}`);
+    };
 }

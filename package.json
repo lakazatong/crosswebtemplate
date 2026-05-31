@@ -28,12 +28,12 @@
         "build:android": "node scripts/build-android.js",
         "build:android:release": "node scripts/build-android.js release",
         "export:android": "npm run build:android:release && node scripts/export-android.js",
-        "android": "npm run build:android",
-        "android:release": "npm run export:android",
+        "android": "npm run build:android && node scripts/run-android.js",
+        "android:release": "npm run export:android && node scripts/run-android.js release",
 
-        "build:all": "npm run build:windows && npm run build:linux && npm run build:web",
-        "build:all:release": "npm run build:windows:release && npm run build:linux:release && npm run build:web:release",
-        "export:all": "npm run export:windows && npm run export:linux && npm run export:web"
+        "build:all": "npm run build:windows && npm run build:linux && npm run build:web && npm run build:android",
+        "build:all:release": "npm run build:windows:release && npm run build:linux:release && npm run build:web:release && npm run build:android:release",
+        "export:all": "npm run export:windows && npm run export:linux && npm run export:web && npm run export:android"
     },
     "dependencies": {
         "@capacitor/android": "^8.3.4",

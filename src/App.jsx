@@ -36,7 +36,7 @@ export default function App() {
 
     return (
         <div className={`app ${__PLATFORM__}`}>
-            {/* {__PLATFORM__ === "desktop" && (
+            {/* {["windows", "linux", "macos"].includes(__PLATFORM__) && (
                 <header className="titlebar" onMouseDown={onDragStart}>
                     <div className="title">CrossWebTemplate</div>
 

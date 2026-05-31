@@ -1,10 +1,13 @@
 #!/usr/bin/env node
-
-import { isMain, buildZig, buildFrontend } from "./_utils.js";
+// internal
+import { isMain, run } from "./_utils.js";
+import { getConfig } from "./_build_system.js";
 
 export function buildWeb() {
-    buildZig();
-    buildFrontend();
+    const config = getConfig();
+
+    run(config.zigBuildCommand);
+    run(config.frontendBuildCommand);
 }
 
 if (isMain(import.meta.url)) {
