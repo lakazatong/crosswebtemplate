@@ -11,7 +11,5 @@
     ],
     "files.associations": {
         "*.code-workspace.source": "jsonc"
-    },
-    "java.configuration.updateBuildConfiguration": "automatic",
-    "cmake.sourceDirectory": "C:/Users/Bo_wo/Desktop/crosswebtemplate/desktop"
+    }
 }
