@@ -24,7 +24,7 @@ function getDockerCommand() {
         "--rm",
         `-v ${projectRoot}:/app`,
         "-w /app",
-        "linux-build",
+        "cwt-build-linux",
     ];
 }
 
@@ -132,10 +132,10 @@ export function getConfig() {
                     projectRoot,
                     "desktop",
                     "docker",
-                    "linux-build.Dockerfile",
+                    "build-linux.Dockerfile",
                 ),
                 "-t",
-                "linux-build",
+                "cwt-build-linux",
                 projectRoot,
             ],
             zigBuildCommand: getZigBuildCommand(

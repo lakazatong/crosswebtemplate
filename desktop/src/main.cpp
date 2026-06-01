@@ -128,29 +128,22 @@ void app(void)
 
 #else /* _WIN32 */
 
+    const char *www_override = std::getenv("CWT_WWW_PATH");
+
 #if DEVELOPMENT_BUILD == 1
-
-    w.navigate("file://" + std::string(WWW_PATH) + "/index.html");
-
-#else /* DEVELOPMENT_BUILD == 1 */
-
+    std::string www_path = www_override ? std::string(www_override) : std::string(WWW_PATH);
+#else
     std::string exe_path = std::filesystem::canonical("/proc/self/exe").parent_path().string();
     std::string www_path = exe_path + "/www";
+#endif
 
-    // Start a local HTTP server to serve the www directory
     auto *svr = new httplib::Server();
     svr->set_mount_point("/", www_path.c_str());
-
-    // Bind to any available port on loopback
     int port = svr->bind_to_any_port("127.0.0.1");
-
     std::thread([svr]()
                 { svr->listen_after_bind(); })
         .detach();
-
     w.navigate("http://127.0.0.1:" + std::to_string(port) + "/index.html");
-
-#endif /* DEVELOPMENT_BUILD == 1 */
 
 #endif /* _WIN32 */
 

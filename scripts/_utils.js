@@ -38,3 +38,13 @@ export function runCapture(cmd) {
     if (Array.isArray(cmd)) cmd = cmd.join(" ");
     return execSync(cmd, { encoding: "utf8" }).trim();
 }
+
+export function toWslPath(winPath) {
+    const forward = winPath.replaceAll("\\", "/");
+    // Match drive letter at start: "C:/..."
+    const match = forward.match(/^([A-Za-z]):\/(.*)$/);
+    if (!match) throw new Error(`Cannot convert to WSL path: ${winPath}`);
+    const letter = match[1].toLowerCase();
+    const rest = match[2];
+    return `/mnt/${letter}/${rest}`;
+}

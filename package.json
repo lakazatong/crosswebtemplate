@@ -16,14 +16,14 @@
         "build:linux": "node scripts/build-linux.js",
         "build:linux:release": "node scripts/build-linux.js release",
         "export:linux": "npm run build:linux:release && node scripts/export-linux.js",
-        "linux": "npm run build:linux && ./.build/linux/Debug/cwt",
-        "linux:release": "npm run export:linux && ./dist/linux/cwt",
+        "linux": "npm run build:linux && node scripts/run-linux.js",
+        "linux:release": "npm run export:linux && node scripts/run-linux.js release",
         
         "build:web": "node scripts/build-web.js",
         "build:web:release": "node scripts/build-web.js release",
         "export:web": "npm run build:web:release && node scripts/export-web.js",
-        "web": "npm run build:web && node scripts/serve-web.js",
-        "web:release": "npm run export:web && node scripts/serve-web.js release",
+        "web": "npm run build:web && node scripts/run-web.js",
+        "web:release": "npm run export:web && node scripts/run-web.js release",
         
         "build:android": "node scripts/build-android.js",
         "build:android:release": "node scripts/build-android.js release",
