@@ -12,8 +12,25 @@ export function getProjectRoot() {
     return projectRoot;
 }
 
+export function getPlatformName() {
+    return process.argv[2] ?? null;
+}
+
 export function getMode() {
-    return process.argv[2] === "release" ? "release" : "debug";
+    return process.argv[3] === "release" ? "release" : "debug";
+}
+
+export function getRelativeBuildDir(platform) {
+    const mode = getMode();
+    return path.join(".build", platform, mode);
+}
+
+export function getBuildDir(platform) {
+    return path.join(projectRoot, getRelativeBuildDir(platform));
+}
+
+export function getZigOutDir(platform) {
+    return path.join(projectRoot, ".build", "zig", platform, getMode());
 }
 
 export function isMain(url) {
@@ -37,14 +54,4 @@ export function run(cmd) {
 export function runCapture(cmd) {
     if (Array.isArray(cmd)) cmd = cmd.join(" ");
     return execSync(cmd, { encoding: "utf8" }).trim();
-}
-
-export function toWslPath(winPath) {
-    const forward = winPath.replaceAll("\\", "/");
-    // Match drive letter at start: "C:/..."
-    const match = forward.match(/^([A-Za-z]):\/(.*)$/);
-    if (!match) throw new Error(`Cannot convert to WSL path: ${winPath}`);
-    const letter = match[1].toLowerCase();
-    const rest = match[2];
-    return `/mnt/${letter}/${rest}`;
 }

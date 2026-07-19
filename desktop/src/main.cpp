@@ -21,7 +21,7 @@
 
 using json = nlohmann::json;
 
-// Forward declare the Zig function (or mock if not linked)
+// Forward declare the Zig function
 extern "C" const char *increment(const char *ptr);
 
 #ifndef _WIN32

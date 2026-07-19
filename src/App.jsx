@@ -15,24 +15,24 @@ export default function App() {
         setCount(response.value);
     }
 
-    const onDragStart = (e) => {
-        console.log(
-            `Calling window.start_dragging with ${JSON.stringify({
-                button: e.button,
-                x: e.clientX,
-                y: e.clientY,
-                time: Date.now(),
-            })}`,
-        );
-        window.start_dragging(
-            JSON.stringify({
-                button: e.button,
-                x: e.clientX,
-                y: e.clientY,
-                time: Date.now(),
-            }),
-        );
-    };
+    // const onDragStart = (e) => {
+    //     console.log(
+    //         `Calling window.start_dragging with ${JSON.stringify({
+    //             button: e.button,
+    //             x: e.clientX,
+    //             y: e.clientY,
+    //             time: Date.now(),
+    //         })}`,
+    //     );
+    //     window.start_dragging(
+    //         JSON.stringify({
+    //             button: e.button,
+    //             x: e.clientX,
+    //             y: e.clientY,
+    //             time: Date.now(),
+    //         }),
+    //     );
+    // };
 
     return (
         <div className={`app ${__PLATFORM__}`}>

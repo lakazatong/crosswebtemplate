@@ -125,9 +125,8 @@ elseif(UNIX)
     target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE "-Wl,-z,noexecstack")
 endif()
 
-# MY_SOURCES is defined to be a list of all the source files
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
-target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES} )
+target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES})
 
 target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE webview::core_static)
 

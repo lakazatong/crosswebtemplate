@@ -1,7 +1,5 @@
-package-lock.json
 .build/
 .gradle/
-node_modules/
 dist/
-dump.ps1
-dump.txt
+node_modules/
+package-lock.json

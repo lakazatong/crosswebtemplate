@@ -5,12 +5,12 @@ import { mkdirSync, rmSync, writeFileSync } from "fs";
 // external
 import sharp from "sharp";
 // internal
-import { isMain, getProjectRoot } from "./_utils.js";
-
-const projectRoot = getProjectRoot();
-const src = path.join(projectRoot, "src/assets/icons/favicon.svg");
+import { getProjectRoot, getPlatformName, isMain } from "./_utils.js";
 
 export async function generateAndroidIcons() {
+    const projectRoot = getProjectRoot();
+    const src = path.join(projectRoot, "src/assets/icons/favicon.svg");
+
     const androidResDir = path.join(
         projectRoot,
         "mobile/android/app/src/main/res",
@@ -114,13 +114,18 @@ export async function generateAndroidIcons() {
     }
 }
 
-if (isMain(import.meta.url)) {
-    const target = process.argv[2];
-    switch (target) {
+export async function generateProjectIcons() {
+    const platform = getPlatformName();
+
+    switch (platform) {
         case "android":
-            generateAndroidIcons();
+            await generateAndroidIcons();
             break;
-        default:
-            console.log(`Unknown target ${target}`);
     }
+
+    throw new Error(`Unknown platform: ${platform}`);
+}
+
+if (isMain(import.meta.url)) {
+    generateProjectIcons();
 }

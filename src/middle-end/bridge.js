@@ -1,45 +1,4 @@
-export let wasmExports = null;
-
-async function loadWasm() {
-    const response = await fetch("/core.wasm");
-
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    const mime = response.headers.get("content-type") || "";
-
-    try {
-        if (
-            WebAssembly.instantiateStreaming &&
-            mime.includes("application/wasm")
-        ) {
-            const { instance } =
-                await WebAssembly.instantiateStreaming(response);
-
-            wasmExports = instance.exports;
-            console.log("WASM loaded successfully.");
-            return;
-        }
-
-        const buffer = await response.arrayBuffer();
-        const { instance } = await WebAssembly.instantiate(buffer);
-
-        wasmExports = instance.exports;
-        console.log("WASM loaded successfully.");
-    } catch (e) {
-        console.debug("WASM failed to load:", e);
-    }
-}
-
-// by dev we mean `npm run dev`
-if (!import.meta.env.DEV && __PLATFORM__ === "web") {
-    try {
-        loadWasm();
-    } catch (e) {
-        console.debug("WASM failed to load:", e);
-    }
-}
+let wasmExports = null;
 
 function writeStringWASM(str) {
     const encoded = new TextEncoder().encode(str);
@@ -57,23 +16,58 @@ function readStringWASM(ptr) {
     return new TextDecoder().decode(heap.slice(ptr, end));
 }
 
-export function register(fn_name, fn) {
+if (["development", "web"].includes(__PLATFORM__)) {
+    try {
+        const response = await fetch("/core.wasm");
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const { instance } = await WebAssembly.instantiateStreaming(response);
+        wasmExports = instance.exports;
+        console.log("WASM loaded successfully.");
+    } catch (e) {
+        wasmExports = null;
+        console.debug("WASM failed to load:", e);
+    }
+}
+
+export function register(fn_name, js_fn_mockup) {
     console.log(`Registering ${fn_name} for platform ${__PLATFORM__}`);
     return (data) => {
-        console.log(`${fn_name} called on platform ${__PLATFORM__}`);
-
-        if (__PLATFORM__ === "development") {
-            return fn(data);
-        }
-
-        if (__PLATFORM__ === "web") {
-            if (!wasmExports) {
-                throw new Error("WASM not initialized");
+        if (["development", "web"].includes(__PLATFORM__)) {
+            if (wasmExports?.[fn_name]) {
+                console.log(
+                    `${fn_name} called on platform ${__PLATFORM__}: using WASM`,
+                );
+                const ptr = writeStringWASM(JSON.stringify(data));
+                const outPtr = wasmExports[fn_name](ptr);
+                return JSON.parse(readStringWASM(outPtr));
             }
 
-            const ptr = writeStringWASM(JSON.stringify(data));
-            const outPtr = wasmExports[fn_name](ptr);
-            return JSON.parse(readStringWASM(outPtr));
+            if (__PLATFORM__ === "development") {
+                console.log(
+                    `${fn_name} called on platform ${__PLATFORM__}: using JS mockup`,
+                );
+                return js_fn_mockup(data);
+            }
+
+            throw new Error(
+                `WASM not initialized or ${fn_name} not found in wasmExports`,
+            );
+        }
+
+        if (["windows", "linux"].includes(__PLATFORM__)) {
+            const js_fn_native = window?.[`bridge_${fn_name}`];
+
+            if (!js_fn_native) {
+                throw new Error(`Windows bridge not found: bridge_${fn_name}`);
+            }
+
+            console.log(
+                `${fn_name} called on platform ${__PLATFORM__}: using native`,
+            );
+            return Promise.resolve(js_fn_native(JSON.stringify(data))).then(
+                (res) => JSON.parse(res),
+            );
         }
 
         if (__PLATFORM__ === "android") {
@@ -83,29 +77,20 @@ export function register(fn_name, fn) {
                 throw new Error(`Android bridge not found`);
             }
 
-            const method = bridge[`bridge_${fn_name}`];
+            const js_fn_native = bridge[`bridge_${fn_name}`];
 
-            if (!method) {
+            if (!js_fn_native) {
                 throw new Error(
                     `Android bridge method not found: bridge_${fn_name}`,
                 );
             }
 
-            return Promise.resolve(
-                method.call(bridge, JSON.stringify(data)),
-            ).then((res) => JSON.parse(res));
-        }
-
-        if (["windows", "linux"].includes(__PLATFORM__)) {
-            const bridge = window?.[`bridge_${fn_name}`];
-
-            if (!bridge) {
-                throw new Error(`Windows bridge not found: bridge_${fn_name}`);
-            }
-
-            return Promise.resolve(bridge(JSON.stringify(data))).then((res) =>
-                JSON.parse(res),
+            console.log(
+                `${fn_name} called on platform ${__PLATFORM__}: using native`,
             );
+            return Promise.resolve(
+                js_fn_native.call(bridge, JSON.stringify(data)),
+            ).then((res) => JSON.parse(res));
         }
 
         throw new Error(`Unknown platform: ${__PLATFORM__}`);
