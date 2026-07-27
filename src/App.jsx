@@ -7,10 +7,6 @@ export default function App() {
 
     async function onClick() {
         const response = await increment({ value: count });
-        if (response.error) {
-            console.error("increment error:", response.error);
-            return;
-        }
         setOrigin(response.origin);
         setCount(response.value);
     }

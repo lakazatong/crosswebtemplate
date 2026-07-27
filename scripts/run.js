@@ -26,6 +26,9 @@ import {
     runCapture,
     run,
     getBuildDir,
+    readCacheEntry,
+    writeCacheEntry,
+    deleteCacheEntry,
 } from "./_utils.js";
 
 const projectRoot = getProjectRoot();
@@ -283,13 +286,33 @@ function runWeb() {
 
 function runAndroid() {
     const apkPath = isRelease
-        ? // "dist/android/app-release.apk"; // adb install can't work until the apk is signed
-          "mobile/android/app/build/outputs/apk/debug/app-debug.apk"
+        ? "dist/android/app-release.apk"
         : "mobile/android/app/build/outputs/apk/debug/app-debug.apk";
 
     const namespace = "com.crosswebtemplate.app";
 
-    run(["adb", "install", `-r ${apkPath}`]);
+    // when changing from debug to release
+    // the signature can differ and we would get
+    // adb.exe: failed to install mobile/android/app/build/outputs/apk/[...]: Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package [...] signatures do not match newer version; ignoring!]
+    const isInstalled = runCapture([
+        "adb",
+        "shell",
+        "pm",
+        "list",
+        "packages",
+        namespace,
+    ]).includes(namespace);
+
+    const lastIsRelease = readCacheEntry("android.is_release");
+
+    if (isInstalled && lastIsRelease !== String(isRelease)) {
+        run(["adb", "uninstall", namespace]);
+        deleteCacheEntry("android.is_release");
+    }
+
+    run(["adb", "install", "-r", apkPath]);
+    writeCacheEntry("android.is_release", String(isRelease));
+
     run(["adb", "shell", "am", "start", `-n ${namespace}/.MainActivity`]);
     let pid = null;
     while (!pid) {

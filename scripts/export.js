@@ -28,8 +28,8 @@ export function exportProject(platform) {
             ensureDir("dist/android");
 
             cpSync(
-                "mobile/android/app/build/outputs/apk/release/app-release-unsigned.apk",
-                "dist/android/app-release-unsigned.apk",
+                "mobile/android/app/build/outputs/apk/release/app-release.apk",
+                "dist/android/app-release.apk",
             );
             break;
         default:

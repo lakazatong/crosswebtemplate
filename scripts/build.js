@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 // std
+import os from "os";
+import fs from "fs";
 import path from "path";
 // internal
 import {
@@ -92,13 +94,12 @@ export async function buildProject(platform) {
     const buildDir = getBuildDir(platform);
     const zigOutDir = getZigOutDir(platform);
 
-    ensureDir(zigOutDir);
-
     const relativeDesktopSourceDir = "desktop";
 
     switch (platform) {
         case "windows":
             ensureDir(buildDir);
+            ensureDir(zigOutDir);
             const desktopSourceDir = path.join(
                 projectRoot,
                 relativeDesktopSourceDir,
@@ -119,6 +120,7 @@ export async function buildProject(platform) {
             break;
         case "linux":
             ensureDir(buildDir);
+            ensureDir(zigOutDir);
             try {
                 runCapture(["docker", "info"]);
             } catch {
@@ -161,6 +163,7 @@ export async function buildProject(platform) {
             ]);
             break;
         case "web":
+            ensureDir(zigOutDir);
             runPipeline([
                 getZigBuildCommand(
                     "build-exe",
@@ -172,17 +175,26 @@ export async function buildProject(platform) {
             ]);
             break;
         case "android":
-            // zigOutDir = path.join(zigOutDir, "arm64-v8a");
+            const androidZigOutDir = path.join(zigOutDir, "arm64-v8a");
+            ensureDir(androidZigOutDir);
 
             function findLatestNdk() {
-                const ndkDir = path.join(
-                    os.homedir(),
-                    "AppData",
-                    "Local",
-                    "Android",
-                    "Sdk",
-                    "ndk",
-                );
+                const sdkDir =
+                    process.env.ANDROID_SDK_ROOT ??
+                    process.env.ANDROID_HOME ??
+                    (process.platform === "win32"
+                        ? path.join(
+                              os.homedir(),
+                              "AppData",
+                              "Local",
+                              "Android",
+                              "Sdk",
+                          )
+                        : process.platform === "darwin"
+                          ? path.join(os.homedir(), "Library", "Android", "sdk")
+                          : path.join(os.homedir(), "Android", "Sdk"));
+
+                const ndkDir = path.join(sdkDir, "ndk");
 
                 if (!fs.existsSync(ndkDir)) {
                     throw new Error(`NDK directory not found: ${ndkDir}`);
@@ -211,7 +223,8 @@ export async function buildProject(platform) {
             }
 
             const ndk = findLatestNdk();
-            const ndkWindows = ndk.join(
+            const ndkWindows = path.join(
+                ndk,
                 "toolchains",
                 "llvm",
                 "prebuilt",
@@ -224,7 +237,7 @@ export async function buildProject(platform) {
                     "bin",
                     "aarch64-linux-android24-clang.cmd",
                 );
-                const soFile = path.join(zigOutDir, "libcore.so");
+                const soFile = path.join(androidZigOutDir, "libcore.so");
                 const jniInclude = path.join(
                     ndkWindows,
                     "sysroot",
@@ -253,10 +266,11 @@ export async function buildProject(platform) {
                     "&&",
                     "gradlew.bat",
                     task,
+                    `-PzigMode=${isRelease ? "release" : "debug"}`,
                 ];
             }
 
-            const objFile = path.join(zigOutDir, "core.o");
+            const objFile = path.join(androidZigOutDir, "core.o");
 
             runPipeline([
                 getZigBuildCommand(
@@ -267,8 +281,9 @@ export async function buildProject(platform) {
                 ),
                 getZigLinkCommand(),
                 generateAndroidIcons,
-                getGradleBuildCommand(),
+                // we need the frontend sources before gradle bundles them in the apk
                 getFrontendBuildCommand(platform),
+                getGradleBuildCommand(),
             ]);
             break;
         default:

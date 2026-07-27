@@ -1,10 +1,15 @@
 package com.crosswebtemplate.app
 
+import android.net.Uri
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import androidx.webkit.WebViewAssetLoader;
+import androidx.webkit.WebViewClientCompat;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebView;
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,13 +26,7 @@ class MainActivity : AppCompatActivity() {
         val webView = WebView(this)
         setContentView(webView)
 
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.allowFileAccessFromFileURLs = true
-        webView.settings.allowUniversalAccessFromFileURLs = true
-
         webView.addJavascriptInterface(Bridge(), "AndroidBridge")
-        webView.webViewClient = WebViewClient()
 
         if (BuildConfig.DEBUG) {
             webView.webChromeClient = object : android.webkit.WebChromeClient() {
@@ -37,6 +36,38 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        webView.loadUrl("file:///android_asset/index.html")
+
+        val assetLoader = WebViewAssetLoader.Builder()
+            .addPathHandler(
+                "/assets/",
+                WebViewAssetLoader.AssetsPathHandler(this)
+            )
+            .addPathHandler(
+                "/res/",
+                WebViewAssetLoader.ResourcesPathHandler(this)
+            )
+            .build()
+
+        webView.webViewClient = object : WebViewClientCompat() {
+            override fun shouldInterceptRequest(
+                view: WebView,
+                request: WebResourceRequest
+            ): WebResourceResponse? {
+                return assetLoader.shouldInterceptRequest(request.url)
+            }
+
+            @Suppress("DEPRECATION")
+            override fun shouldInterceptRequest(
+                view: WebView,
+                url: String
+            ): WebResourceResponse? {
+                return assetLoader.shouldInterceptRequest(Uri.parse(url))
+            }
+        }
+
+        webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setDomStorageEnabled(true);
+
+        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
     }
 }
