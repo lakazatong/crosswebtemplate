@@ -3,3 +3,6 @@
 dist/
 node_modules/
 package-lock.json
+onefile_*
+src/bridge/mimalloc
+*.dump

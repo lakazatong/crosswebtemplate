@@ -22,7 +22,10 @@ export function exportProject(platform) {
             ensureDir("dist/web");
 
             cpSync(".build/frontend", "dist/web", { recursive: true });
-            cpSync(".build/zig/web/release/core.wasm", "dist/web/core.wasm");
+            cpSync(
+                ".build/zig/web/release/middle-end.wasm",
+                "dist/web/middle-end.wasm",
+            );
             break;
         case "android":
             ensureDir("dist/android");

@@ -171,8 +171,8 @@ function runLinux() {
     if (isRelease) {
         runInWsl(toWslPath(path.join(projectRoot, "dist", "linux", "cwt")));
     } else {
-        // WWW_PATH was baked in at cmake configure time as /app/.build/frontend (Docker path).
-        // We override it here with the correct WSL mount path so the binary finds the frontend.
+        // WWW_PATH was baked in at cmake configure time as /app/.build/frontend (Docker path)
+        // We override it here with the correct WSL mount path so the binary finds the frontend
         // See desktop/src/main.cpp and search for CWT_WWW_PATH
         runInWsl(
             toWslPath(
@@ -191,6 +191,12 @@ function runWeb() {
     const port = 5173;
     const buildRoot = path.join(projectRoot, ".build");
     const app = express();
+
+    app.use((req, res, next) => {
+        res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+        res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+        next();
+    });
 
     app.use((req, res, next) => {
         const start = Date.now();
@@ -222,13 +228,13 @@ function runWeb() {
     if (isRelease) {
         app.use(express.static(path.join(projectRoot, "dist", "web")));
     } else {
-        app.get("/core.wasm", (req, res) => {
+        app.get("/middle-end.wasm", (req, res) => {
             const wasmPath = path.join(
                 buildRoot,
                 "zig",
                 "web",
                 "debug",
-                "core.wasm",
+                "middle-end.wasm",
             );
             res.setHeader("Content-Type", "application/wasm");
             createReadStream(wasmPath).pipe(res);

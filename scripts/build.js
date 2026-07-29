@@ -44,7 +44,7 @@ function getZigBuildCommand(action, target, out, extra = []) {
     return [
         "zig",
         action,
-        "src/middle-end/core.zig",
+        "src/middle-end.zig",
         `-O ${isRelease ? "ReleaseFast" : "Debug"}`,
         `-target ${target}`,
         ...extra,
@@ -168,8 +168,15 @@ export async function buildProject(platform) {
                 getZigBuildCommand(
                     "build-exe",
                     "wasm32-freestanding",
-                    path.join(zigOutDir, "core.wasm"),
-                    ["-fno-entry", "-rdynamic"],
+                    path.join(zigOutDir, "middle-end.wasm"),
+                    [
+                        "-fno-entry",
+                        "-rdynamic",
+                        "-mcpu=baseline+atomics+bulk_memory",
+                        "--shared-memory",
+                        "--import-memory",
+                        "--max-memory=4294967296", // 65536 * 64 KiB = 4 GiB
+                    ],
                 ),
                 getFrontendBuildCommand(platform),
             ]);

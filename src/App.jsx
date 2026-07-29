@@ -1,14 +1,35 @@
 import { useState } from "react";
-import { increment } from "./middle-end/core.js";
+import { increment } from "./middle-end.js";
 
 export default function App() {
     const [origin, setOrigin] = useState("");
     const [count, setCount] = useState(0);
 
     async function onClick() {
-        const response = await increment({ value: count });
-        setOrigin(response.origin);
-        setCount(response.value);
+        // increment({ value: count });
+        const responses = await Promise.all([
+            increment({ value: count }),
+            increment({ value: count }),
+            increment({ value: count }),
+            increment({ value: count }),
+            increment({ value: count }),
+            increment({ value: count }),
+            increment({ value: count }),
+        ]);
+
+        console.log(responses);
+
+        const successful = responses.filter((response) => response.code === 0);
+
+        if (successful.length === 0) {
+            console.log("all failed");
+            return;
+        }
+
+        const best = successful.reduce((a, b) => (b.value > a.value ? b : a));
+
+        setOrigin(best.origin);
+        setCount(best.value);
     }
 
     // const onDragStart = (e) => {
