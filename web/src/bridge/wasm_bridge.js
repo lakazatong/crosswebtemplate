@@ -3,12 +3,8 @@ import Worker from "./worker_script.js?worker";
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-const heapBase = 2 * Math.pow(2, 20); // 2 MiB
-
 function readString(mem, ptr, len) {
-    const raw = new Uint8Array(mem.buffer, ptr, len);
-    const data = raw.slice();
-    return decoder.decode(data);
+    return decoder.decode(new Uint8Array(mem.buffer, ptr, len).slice());
 }
 
 export default class WASMBridge {
@@ -17,11 +13,10 @@ export default class WASMBridge {
     #mainInstance;
 
     #workers = [];
-    #pendingJobs = new Map(); // job_id -> { resolve, reject, inputPtr, inputLen }
-    // same as coreInit in core.zig
+    #pendingJobs = new Map();
     #fnMap = {};
 
-    constructor(module, memory, mainInstance) {
+    constructor(module, memory, mainInstance, signalBuffer) {
         this.#module = module;
         this.#memory = memory;
         this.#mainInstance = mainInstance;
@@ -31,14 +26,14 @@ export default class WASMBridge {
         for (let fn_id = 0; fn_id < count; fn_id++) {
             const ptr = mainInstance.exports.getRegistryNamePtr(fn_id);
             const len = mainInstance.exports.getRegistryNameLen(fn_id);
-            const name = readString(memory, ptr, len);
-            this.#fnMap[name] = fn_id;
+
+            this.#fnMap[readString(memory, ptr, len)] = fn_id;
         }
 
-        console.log("fnMap:", this.#fnMap);
+        this.signal = new Int32Array(signalBuffer);
     }
 
-    #spawnWorker(index) {
+    #spawnWorker(signalBuffer) {
         return new Promise((resolve) => {
             const worker = new Worker();
 
@@ -55,9 +50,10 @@ export default class WASMBridge {
             };
 
             worker.postMessage({
-                type: "init",
+                type: "start",
                 module: this.#module,
                 memory: this.#memory,
+                signalBuffer,
             });
 
             this.#workers.push(worker);
@@ -72,22 +68,29 @@ export default class WASMBridge {
 
         const memory = new WebAssembly.Memory({
             initial: 32,
-            maximum: 65536, // 4GiB virtual
+            maximum: 65536,
             shared: true,
         });
 
+        const signalBuffer = new SharedArrayBuffer(4); // 4 bytes, one i32
+
         const mainInstance = await WebAssembly.instantiate(module, {
-            env: { memory, notify_js: () => {} },
+            env: {
+                memory,
+                notify_host: () => {},
+            },
         });
 
-        console.log("exports:", Object.keys(mainInstance.exports));
+        const bridge = new WASMBridge(
+            module,
+            memory,
+            mainInstance,
+            signalBuffer,
+        );
 
-        const bridge = new WASMBridge(module, memory, mainInstance);
-
-        // Spawn workers
         await Promise.all(
-            Array.from({ length: numWorkers }, (_, i) =>
-                bridge.#spawnWorker(i),
+            Array.from({ length: numWorkers }, () =>
+                bridge.#spawnWorker(signalBuffer),
             ),
         );
 
@@ -97,28 +100,12 @@ export default class WASMBridge {
     #handleJobDone(job_id) {
         const pending = this.#pendingJobs.get(job_id);
 
-        if (!pending) {
-            return;
-        }
+        if (!pending) return;
 
         this.#pendingJobs.delete(job_id);
 
-        if (pending.inputPtr) {
-            this.#mainInstance.exports.heapFree(
-                pending.inputPtr,
-                pending.inputLen,
-            );
-        }
-
         const ptr = this.#mainInstance.exports.getJobOutputPtr(job_id);
         const len = this.#mainInstance.exports.getJobOutputLen(job_id);
-
-        if (ptr === 0) {
-            this.#mainInstance.exports.releaseJob(job_id);
-            pending.reject(new Error("Job completed but output is NULL"));
-            return;
-        }
-
         const json = readString(this.#memory, ptr, len);
 
         let result;
@@ -128,70 +115,56 @@ export default class WASMBridge {
         } catch (e) {
             this.#mainInstance.exports.heapFree(ptr, len);
             this.#mainInstance.exports.releaseJob(job_id);
-            pending.reject(new Error(`Invalid JSON: ${json}`));
+
+            pending.reject(e);
             return;
         }
 
         this.#mainInstance.exports.heapFree(ptr, len);
         this.#mainInstance.exports.releaseJob(job_id);
+
         pending.resolve(result);
     }
 
-    #wakeWorkers(jobId) {
-        for (const worker of this.#workers) {
-            worker.postMessage({ type: "wake", job_id: jobId });
-        }
-    }
-
-    // Public: submit a job and get a Promise
     call(funcName, inputObj) {
-        const funcId = this.#fnMap[funcName];
-        if (funcId === undefined) {
+        const fn_id = this.#fnMap[funcName];
+
+        if (fn_id === undefined) {
             throw new Error(`Function "${funcName}" not registered`);
         }
 
-        const json = JSON.stringify(inputObj);
-        const encoded = encoder.encode(json);
-
-        if (encoded.length === 0) {
-            throw new Error("Empty inputObj");
-        }
-
+        const encoded = encoder.encode(JSON.stringify(inputObj));
         const inputPtr = this.#mainInstance.exports.heapAlloc(encoded.length);
 
         if (!inputPtr) {
-            throw new Error("Out of memory for input");
+            throw new Error("Out of memory");
         }
 
         new Uint8Array(this.#memory.buffer, inputPtr, encoded.length).set(
             encoded,
         );
 
-        const jobId = this.#mainInstance.exports.submitJob(
-            funcId,
+        const job_id = this.#mainInstance.exports.enqueueJob(
+            fn_id,
             inputPtr,
             encoded.length,
         );
 
-        if (jobId === 0xffffffff) {
+        if (job_id === 0xffffffff) {
             this.#mainInstance.exports.heapFree(inputPtr, encoded.length);
-            throw new Error("No free job slots");
+
+            throw new Error("No free slots");
         }
 
         const promise = new Promise((resolve, reject) => {
-            this.#pendingJobs.set(jobId, {
+            this.#pendingJobs.set(job_id, {
                 resolve,
                 reject,
-                inputPtr,
-                inputLen: encoded.length,
             });
         });
 
-        this.#wakeWorkers(jobId);
-
-        console.log(
-            `[call] created job ${jobId} for function ${funcName} with input ${inputPtr - heapBase} of length ${encoded.length}`,
-        );
+        Atomics.add(this.signal, 0, 1);
+        Atomics.notify(this.signal, 0, 1);
 
         return promise;
     }

@@ -228,13 +228,13 @@ function runWeb() {
     if (isRelease) {
         app.use(express.static(path.join(projectRoot, "dist", "web")));
     } else {
-        app.get("/middle-end.wasm", (req, res) => {
+        app.get("/core.wasm", (req, res) => {
             const wasmPath = path.join(
                 buildRoot,
                 "zig",
                 "web",
                 "debug",
-                "middle-end.wasm",
+                "core.wasm",
             );
             res.setHeader("Content-Type", "application/wasm");
             createReadStream(wasmPath).pipe(res);

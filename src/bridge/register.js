@@ -1,9 +1,11 @@
 export default function register(fn_name, js_fn_mockup) {
     if (["development", "web"].includes(__PLATFORM__)) {
-        return fetch("/middle-end.wasm")
+        return fetch("/core.wasm")
             .then(async (response) => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const WASMBridge = (await import("./wasm_bridge.js")).default;
+                const WASMBridge = (
+                    await import("../../web/src/bridge/wasm_bridge.js")
+                ).default;
                 const bytes = await response.arrayBuffer();
                 const wasm = await WASMBridge.create(bytes, 1);
 

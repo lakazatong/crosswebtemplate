@@ -1,11 +1,35 @@
+const std = @import("std");
 const dispatch = @import("dispatch.zig");
 
-pub const JobState = enum(usize) { IDLE, PENDING, RUNNING, DONE };
+// lock for jobs
+var lock_state: bool = false;
+
+pub inline fn lock() void {
+    while (@cmpxchgWeak(bool, &lock_state, false, true, .acquire, .monotonic) != null) {
+        std.atomic.spinLoopHint();
+    }
+}
+
+pub inline fn unlock() void {
+    @atomicStore(bool, &lock_state, false, .release);
+}
+
+pub const JobState = enum(usize) {
+    IDLE,
+    PENDING,
+    RUNNING,
+    DONE,
+};
 
 // from the compiler itself:
 // extern structs cannot contain fields of type '[]u8'
 // slices have no guaranteed in-memory representation
-const Buffer = extern struct { ptr: usize, len: usize };
+//
+// so we ensure it ourselves, this is just a slice named Buffer
+const Buffer = extern struct {
+    ptr: usize,
+    len: usize,
+};
 
 const Job = extern struct {
     state: JobState,
@@ -15,65 +39,90 @@ const Job = extern struct {
 };
 
 const empty_job: Job = .{
-    .state = JobState.IDLE,
+    .state = .IDLE,
     .fn_id = 0,
     .input = .{ .ptr = 0, .len = 0 },
     .output = .{ .ptr = 0, .len = 0 },
 };
 
 const SLOTS_SIZE = 64;
+
 pub var slots = [_]Job{empty_job} ** SLOTS_SIZE;
 
-// for JS
+// queue of slot indices
+var queue: [SLOTS_SIZE]usize = undefined;
+var queue_head: usize = 0;
+var queue_tail: usize = 0;
+var queue_len: usize = 0;
 
-export fn submitJob(fn_id: usize, input_ptr: usize, input_len: usize) usize {
+export fn enqueueJob(fn_id: usize, input_ptr: usize, input_len: usize) usize {
+    lock();
+    defer unlock();
+
+    if (queue_len == SLOTS_SIZE)
+        return 0xFFFFFFFF;
+
     for (0..SLOTS_SIZE) |i| {
         const job = &slots[i];
 
-        if (@atomicLoad(JobState, &job.state, .acquire) == JobState.IDLE) {
-            job.fn_id = fn_id;
-            job.input = .{ .ptr = input_ptr, .len = input_len };
-            job.output = .{ .ptr = 0, .len = 0 };
+        if (job.state != .IDLE)
+            continue;
 
-            @atomicStore(JobState, &job.state, JobState.PENDING, .release);
+        job.state = .PENDING;
+        job.fn_id = fn_id;
+        job.input = .{ .ptr = input_ptr, .len = input_len };
+        job.output = .{ .ptr = 0, .len = 0 };
 
-            return @intCast(i);
-        }
+        queue[queue_tail] = i;
+        queue_tail = (queue_tail + 1) % SLOTS_SIZE;
+        queue_len += 1;
+
+        return i;
     }
 
     return 0xFFFFFFFF;
 }
 
 export fn releaseJob(job_id: usize) void {
+    lock();
+    defer unlock();
+
     const job = &slots[job_id];
-    _ = @cmpxchgStrong(
-        JobState,
-        &job.state,
-        JobState.DONE,
-        JobState.IDLE,
-        .acquire,
-        .monotonic,
-    );
+    if (job.state != .DONE)
+        @panic("releaseJob: called on non-DONE job");
+    job.state = .IDLE;
 }
 
-export fn wake(job_id: usize) void {
-    const job = &slots[job_id];
+export fn processNextJob() bool {
+    lock();
 
-    const old = @cmpxchgStrong(
-        JobState,
-        &job.state,
-        JobState.PENDING,
-        JobState.RUNNING,
-        .acquire,
-        .monotonic,
-    );
-
-    if (old == null) { // job.state was PENDING indeed, and is now RUNNING
-        dispatch.dispatch(job_id, job.fn_id) catch {
-            @atomicStore(JobState, &job.state, JobState.IDLE, .release);
-            return;
-        };
+    if (queue_len == 0) {
+        unlock();
+        return false;
     }
+
+    const job_id = queue[queue_head];
+    queue_head = (queue_head + 1) % SLOTS_SIZE;
+    queue_len -= 1;
+
+    var job = &slots[job_id];
+    if (job.state != .PENDING)
+        @panic("processNextJob: job in queue is not PENDING");
+    job.state = .RUNNING;
+
+    unlock();
+
+    dispatch.dispatch(job_id, job.fn_id) catch {
+        lock();
+        defer unlock();
+
+        if (job.state != .RUNNING)
+            @panic("processNextJob: job after dispatch failure is not RUNNING");
+        job.state = .IDLE;
+        return false;
+    };
+
+    return true;
 }
 
 export fn getJobOutputPtr(job_id: usize) usize {

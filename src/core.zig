@@ -1,4 +1,6 @@
 const std = @import("std");
+const builtin = @import("builtin");
+
 const utils = @import("bridge/utils.zig");
 const dispatch = @import("bridge/dispatch.zig");
 
@@ -106,4 +108,13 @@ export fn dispatchInit() void {
 
 comptime {
     _ = utils; // just making sure symbols are exported
+
+    // @compileLog("os", builtin.target.os.tag);
+    // @compileLog("arch", builtin.target.cpu.arch);
+    // @compileLog("abi", builtin.target.abi);
+    // @compileLog("cpu model", builtin.target.cpu.model.name);
+    // @compileLog("endian", builtin.target.cpu.arch.endian());
+    // @compileLog("pointer width", builtin.target.ptrBitWidth());
+    // @compileLog("object format", builtin.target.ofmt);
+    // @compileLog("mode", builtin.mode);
 }

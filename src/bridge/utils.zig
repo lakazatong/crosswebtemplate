@@ -1,5 +1,6 @@
 const std = @import("std");
 const jobs = @import("jobs.zig");
+const heap = @import("heap.zig");
 
 // Error Codes
 pub const SUCCESS = 0;
@@ -16,50 +17,39 @@ pub fn getInput(job_id: usize) !std.json.Parsed(std.json.Value) {
 
     return std.json.parseFromSlice(
         std.json.Value,
-        std.heap.wasm_allocator,
+        heap.allocator,
         slice,
         .{},
     );
 }
 
 // Host function that JS must provide
-extern fn notify_js(job_id: usize) void;
+extern fn notify_host(job_id: usize) void;
 
 pub fn done(job_id: usize, data: anytype) void {
-    const job = &jobs.slots[job_id];
-    if (@atomicLoad(jobs.JobState, &job.state, .acquire) != jobs.JobState.RUNNING) return;
+    jobs.lock();
+    defer jobs.unlock();
 
-    var out = std.Io.Writer.Allocating.init(std.heap.wasm_allocator);
+    const job = &jobs.slots[job_id];
+    if (job.state != jobs.JobState.RUNNING)
+        @panic("done: job is not RUNNING");
+
+    var out = std.Io.Writer.Allocating.init(heap.allocator);
 
     std.json.Stringify.value(data, .{}, &out.writer) catch {
         out.deinit();
-        @atomicStore(jobs.JobState, &job.state, jobs.JobState.IDLE, .release);
+        job.state = .IDLE;
         return;
     };
 
     const serialized = out.toOwnedSlice() catch {
         out.deinit();
-        @atomicStore(jobs.JobState, &job.state, jobs.JobState.IDLE, .release);
+        job.state = .IDLE;
         return;
     };
 
+    job.state = .DONE;
     job.output = .{ .ptr = @intFromPtr(serialized.ptr), .len = serialized.len };
-    @atomicStore(jobs.JobState, &job.state, jobs.JobState.DONE, .release);
 
-    notify_js(job_id);
-}
-
-// for JS
-
-export fn heapAlloc(size: usize) ?[*]u8 {
-    const slice = std.heap.wasm_allocator.alloc(u8, size) catch return null;
-    return slice.ptr;
-}
-
-export fn heapFree(ptr: [*]u8, size: usize) void {
-    std.heap.wasm_allocator.free(ptr[0..size]);
-}
-
-comptime {
-    _ = jobs;
+    notify_host(job_id);
 }

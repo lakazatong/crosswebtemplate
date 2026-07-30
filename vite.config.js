@@ -12,25 +12,19 @@ export default defineConfig(({ mode }) => ({
                   {
                       name: "serve-wasm",
                       configureServer(server) {
-                          server.middlewares.use(
-                              "/middle-end.wasm",
-                              (req, res) => {
-                                  const wasmPath = path.join(
-                                      process.cwd(),
-                                      ".build",
-                                      "zig",
-                                      "web",
-                                      "debug",
-                                      "middle-end.wasm",
-                                  );
+                          server.middlewares.use("/core.wasm", (req, res) => {
+                              const wasmPath = path.join(
+                                  process.cwd(),
+                                  ".build",
+                                  "zig",
+                                  "web",
+                                  "debug",
+                                  "core.wasm",
+                              );
 
-                                  res.setHeader(
-                                      "Content-Type",
-                                      "application/wasm",
-                                  );
-                                  createReadStream(wasmPath).pipe(res);
-                              },
-                          );
+                              res.setHeader("Content-Type", "application/wasm");
+                              createReadStream(wasmPath).pipe(res);
+                          });
                       },
                   },
               ]

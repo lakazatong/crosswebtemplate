@@ -18,7 +18,7 @@ These are obtained by running `npm run export:all`, and checking the size of eve
 | -------- | ------- |
 | Windows  | 594 KB  |
 | Linux    | 2.35 MB |
-| Web      | 1.06 MB |
+| Web      | 1.09 MB |
 | Android  | 2.06 MB |
 
 ## Requirements

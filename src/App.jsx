@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { increment } from "./middle-end.js";
+import { increment } from "./core.js";
 
 export default function App() {
     const [origin, setOrigin] = useState("");
@@ -9,12 +9,12 @@ export default function App() {
         // increment({ value: count });
         const responses = await Promise.all([
             increment({ value: count }),
-            increment({ value: count }),
-            increment({ value: count }),
-            increment({ value: count }),
-            increment({ value: count }),
-            increment({ value: count }),
-            increment({ value: count }),
+            increment({ value: count + 1 }),
+            increment({ value: count + 2 }),
+            increment({ value: count + 3 }),
+            increment({ value: count + 4 }),
+            increment({ value: count + 5 }),
+            increment({ value: count + 6 }),
         ]);
 
         console.log(responses);

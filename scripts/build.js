@@ -44,9 +44,10 @@ function getZigBuildCommand(action, target, out, extra = []) {
     return [
         "zig",
         action,
-        "src/middle-end.zig",
+        "src/core.zig",
         `-O ${isRelease ? "ReleaseFast" : "Debug"}`,
         `-target ${target}`,
+        "-fno-single-threaded",
         ...extra,
         `-femit-bin=${out}`,
     ];
@@ -168,7 +169,7 @@ export async function buildProject(platform) {
                 getZigBuildCommand(
                     "build-exe",
                     "wasm32-freestanding",
-                    path.join(zigOutDir, "middle-end.wasm"),
+                    path.join(zigOutDir, "core.wasm"),
                     [
                         "-fno-entry",
                         "-rdynamic",
@@ -258,7 +259,7 @@ export async function buildProject(platform) {
                     "-o",
                     soFile,
                     objFile,
-                    "src/middle-end/jni_bridge.c",
+                    "mobile/android/app/src/bridge/jni_bridge.c",
                     `-I${jniInclude}`,
                     "-lc",
                 ];
