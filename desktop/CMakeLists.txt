@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(cwt LANGUAGES CXX)
 
+find_package(Threads REQUIRED)
+
 if(NOT CMAKE_GENERATOR STREQUAL "Ninja")
     message(FATAL_ERROR "Only Ninja is supported")
 endif()
@@ -64,7 +66,7 @@ set(WEBVIEW_MSWEBVIEW2_VERSION "1.0.3967.48" CACHE STRING "" FORCE)
 set(WEBVIEW_USE_BUILTIN_MSWEBVIEW2 ON CACHE BOOL "" FORCE)
 # Compile-time Options
 ## C API Linkage
-set(WEBVIEW_STATIC ON CACHE BOOL "" FORCE)
+set(WEBVIEW_STATIC OFF CACHE BOOL "" FORCE)
 ## Backend Selection
 if(WIN32)
     set(WEBVIEW_EDGE ON CACHE BOOL "" FORCE)
@@ -111,7 +113,11 @@ target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURC
 
 if(WIN32)
 	set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES WIN32_EXECUTABLE TRUE)
-	target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE "/SUBSYSTEM:WINDOWS")
+	target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE
+        "/SUBSYSTEM:WINDOWS"
+        "/EXPORT:alloc_count"
+        "/EXPORT:free_count"
+    )
 	target_sources("${CMAKE_PROJECT_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/resources/windows/resources.rc")
 elseif(APPLE)
     # set(MACOSX_BUNDLE TRUE)
@@ -128,7 +134,10 @@ endif()
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 target_sources("${CMAKE_PROJECT_NAME}" PRIVATE ${MY_SOURCES})
 
-target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE webview::core_static)
+target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE
+    webview::core
+    Threads::Threads
+)
 
 string(TOLOWER "${CMAKE_SYSTEM_NAME}" SYSTEM_NAME_LOWER)
 

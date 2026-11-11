@@ -12,6 +12,11 @@ onmessage = async (e) => {
                     job_id,
                 });
             },
+            sleep_ms: (milliseconds) => {
+                const buffer = new SharedArrayBuffer(4);
+                const signal = new Int32Array(buffer);
+                Atomics.wait(signal, 0, 0, milliseconds);
+            },
         },
     });
 

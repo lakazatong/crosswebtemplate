@@ -33,6 +33,16 @@ export default class WASMBridge {
         this.signal = new Int32Array(signalBuffer);
     }
 
+    zigExport(name) {
+        const ptr = this.#mainInstance.exports[name]?.value;
+
+        if (ptr === undefined) {
+            throw new Error(`Zig export not found: ${name}`);
+        }
+
+        return new DataView(this.#memory.buffer).getUint32(ptr, true);
+    }
+
     #spawnWorker(signalBuffer) {
         return new Promise((resolve) => {
             const worker = new Worker();
@@ -60,10 +70,7 @@ export default class WASMBridge {
         });
     }
 
-    static async create(
-        wasmBytes,
-        numWorkers = navigator.hardwareConcurrency || 4,
-    ) {
+    static async create(wasmBytes, numWorkers = navigator.hardwareConcurrency || 4) {
         const module = await WebAssembly.compile(wasmBytes);
 
         const memory = new WebAssembly.Memory({
@@ -78,20 +85,16 @@ export default class WASMBridge {
             env: {
                 memory,
                 notify_host: () => {},
+                sleep_ms: (milliseconds) => {},
             },
         });
 
-        const bridge = new WASMBridge(
-            module,
-            memory,
-            mainInstance,
-            signalBuffer,
-        );
+        const bridge = new WASMBridge(module, memory, mainInstance, signalBuffer);
+
+        console.log("WASMBridge worker count:", numWorkers);
 
         await Promise.all(
-            Array.from({ length: numWorkers }, () =>
-                bridge.#spawnWorker(signalBuffer),
-            ),
+            Array.from({ length: numWorkers }, () => bridge.#spawnWorker(signalBuffer)),
         );
 
         return bridge;
@@ -133,38 +136,43 @@ export default class WASMBridge {
             throw new Error(`Function "${funcName}" not registered`);
         }
 
-        const encoded = encoder.encode(JSON.stringify(inputObj));
-        const inputPtr = this.#mainInstance.exports.heapAlloc(encoded.length);
+        let inputPtr = 0;
+        let inputLen = 0;
 
-        if (!inputPtr) {
-            throw new Error("Out of memory");
+        if (inputObj !== undefined) {
+            const json = JSON.stringify(inputObj);
+
+            if (json === undefined) {
+                throw new TypeError("Input cannot be serialized to JSON");
+            }
+
+            const encoded = encoder.encode(json);
+            inputLen = encoded.length;
+            inputPtr = this.#mainInstance.exports.heapAlloc(inputLen);
+
+            if (!inputPtr) {
+                throw new Error("Out of memory");
+            }
+
+            new Uint8Array(this.#memory.buffer, inputPtr, inputLen).set(encoded);
         }
 
-        new Uint8Array(this.#memory.buffer, inputPtr, encoded.length).set(
-            encoded,
-        );
-
-        const job_id = this.#mainInstance.exports.enqueueJob(
-            fn_id,
-            inputPtr,
-            encoded.length,
-        );
+        const job_id = this.#mainInstance.exports.enqueueJob(fn_id, inputPtr, inputLen);
 
         if (job_id === 0xffffffff) {
-            this.#mainInstance.exports.heapFree(inputPtr, encoded.length);
+            if (inputPtr) {
+                this.#mainInstance.exports.heapFree(inputPtr, inputLen);
+            }
 
             throw new Error("No free slots");
         }
 
         const promise = new Promise((resolve, reject) => {
-            this.#pendingJobs.set(job_id, {
-                resolve,
-                reject,
-            });
+            this.#pendingJobs.set(job_id, { resolve, reject });
         });
 
         Atomics.add(this.signal, 0, 1);
-        Atomics.notify(this.signal, 0, 1);
+        Atomics.notify(this.signal, 0, this.#workers.length);
 
         return promise;
     }

@@ -1,21 +1,36 @@
 import { useState } from "react";
-import { increment } from "./core.js";
+import { zigExport, increment, sleep } from "./core.js";
 
 export default function App() {
     const [origin, setOrigin] = useState("");
     const [count, setCount] = useState(0);
 
     async function onClick() {
-        // increment({ value: count });
+        console.log("allocs: ", await zigExport("alloc_count"));
+        console.log("frees: ", await zigExport("free_count"));
+        // await increment({ value: count });
+        // const responses = await Promise.all([
+        //     increment({ value: count }),
+        //     increment({ value: count + 1 }),
+        //     increment({ value: count + 2 }),
+        //     increment({ value: count + 3 }),
+        //     increment({ value: count + 4 }),
+        //     increment({ value: count + 5 }),
+        //     increment({ value: count + 6 }),
+        // ]);
+        console.time("sequential");
+
+        await sleep();
+        await sleep();
+
+        console.timeEnd("sequential");
+
+        console.time("parallel");
         const responses = await Promise.all([
-            increment({ value: count }),
-            increment({ value: count + 1 }),
-            increment({ value: count + 2 }),
-            increment({ value: count + 3 }),
-            increment({ value: count + 4 }),
-            increment({ value: count + 5 }),
-            increment({ value: count + 6 }),
+            sleep(),
+            sleep(),
         ]);
+        console.timeEnd("parallel");
 
         console.log(responses);
 
@@ -30,6 +45,8 @@ export default function App() {
 
         setOrigin(best.origin);
         setCount(best.value);
+        console.log("allocs: ", await zigExport("alloc_count"));
+        console.log("frees: ", await zigExport("free_count"));
     }
 
     // const onDragStart = (e) => {
@@ -66,8 +83,7 @@ export default function App() {
             )} */}
             <main className="screen">
                 <p className="value">
-                    {origin}
-                    {count}
+                    From {origin}: {count}
                 </p>
 
                 <button className="button" type="button" onClick={onClick}>

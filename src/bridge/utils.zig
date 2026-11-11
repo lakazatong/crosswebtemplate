@@ -9,6 +9,21 @@ pub const ERR_OUT_OF_MEMORY = 2;
 pub const ERR_INTERNAL = 3;
 pub const ERR_USER_BASE = 4;
 
+pub fn freeInput(job_id: usize) void {
+    const job = &jobs.slots[job_id];
+    const input = job.input;
+
+    if (input.ptr != 0) {
+        const ptr: [*]u8 = @ptrFromInt(input.ptr);
+        heap.allocator.free(ptr[0..input.len]);
+    }
+
+    job.input = .{
+        .ptr = 0,
+        .len = 0,
+    };
+}
+
 pub fn getInput(job_id: usize) !std.json.Parsed(std.json.Value) {
     const job = &jobs.slots[job_id];
 
@@ -23,7 +38,7 @@ pub fn getInput(job_id: usize) !std.json.Parsed(std.json.Value) {
     );
 }
 
-// Host function that JS must provide
+// Host function that the bridge must provide
 extern fn notify_host(job_id: usize) void;
 
 pub fn done(job_id: usize, data: anytype) void {

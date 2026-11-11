@@ -20,6 +20,8 @@ const IncrementErrorResponse = struct {
 };
 
 fn increment(job_id: usize) void {
+    defer utils.freeInput(job_id);
+
     const input = utils.getInput(job_id) catch |err| {
         return utils.done(job_id, IncrementErrorResponse{
             .code = utils.ERR_INVALID_ARGS,
@@ -53,8 +55,110 @@ fn increment(job_id: usize) void {
 
     utils.done(job_id, IncrementResponse{
         .code = utils.SUCCESS,
-        .origin = "From Zig: ",
+        .origin = "Zig",
         .value = number + 1,
+    });
+}
+
+// const SleepResponse = struct {
+//     code: usize,
+//     origin: []const u8,
+//     value: isize,
+// };
+
+// const SleepErrorResponse = struct {
+//     code: usize,
+//     message: []const u8,
+// };
+
+// fn sleep(job_id: usize) void {
+//     const input = utils.getInput(job_id) catch |err| {
+//         return utils.done(job_id, SleepErrorResponse{
+//             .code = utils.ERR_INVALID_ARGS,
+//             .message = @errorName(err),
+//         });
+//     };
+
+//     defer input.deinit();
+
+//     if (input.value.object.count() != 1) {
+//         return utils.done(job_id, SleepErrorResponse{
+//             .code = utils.ERR_INVALID_ARGS,
+//             .message = "Expected exactly one argument: 'value'",
+//         });
+//     }
+
+//     const value = input.value.object.get("value") orelse {
+//         return utils.done(job_id, SleepErrorResponse{
+//             .code = utils.ERR_INVALID_ARGS,
+//             .message = "Missing 'value' field",
+//         });
+//     };
+
+//     if (value != .integer) {
+//         return utils.done(job_id, SleepErrorResponse{
+//             .code = utils.ERR_INVALID_ARGS,
+//             .message = "'value' must be an integer",
+//         });
+//     }
+
+//     const seconds = std.math.cast(u64, value.integer) orelse {
+//         return utils.done(job_id, SleepErrorResponse{
+//             .code = utils.ERR_INVALID_ARGS,
+//             .message = "'value' must be a non-negative integer",
+//         });
+//     };
+
+//     const duration = std.math.mul(u64, seconds, std.time.ns_per_s) catch {
+//         return utils.done(job_id, SleepErrorResponse{
+//             .code = utils.ERR_INVALID_ARGS,
+//             .message = "Sleep duration is too large",
+//         });
+//     };
+
+//     const io = std.Io.Threaded.global_single_threaded.io();
+
+//     io.sleep(
+//         .fromNanoseconds(@intCast(duration)),
+//         .awake,
+//     ) catch {};
+
+//     utils.done(job_id, SleepResponse{
+//         .code = utils.SUCCESS,
+//         .origin = "Zig",
+//         .value = std.math.cast(isize, seconds) orelse unreachable,
+//     });
+// }
+
+const StressResponse = struct {
+    code: i32,
+    origin: []const u8 = "Zig",
+    value: u64,
+};
+
+const StressErrorResponse = struct {
+    code: usize,
+    message: []const u8,
+};
+
+extern fn sleep_ms(milliseconds: u32) void;
+
+fn sleep(job_id: usize) void {
+    // const iterations: u64 = 100_000_000;
+
+    // var value: u64 = 0x123456789ABCDEF0;
+
+    // for (0..iterations) |_| {
+    //     value ^= value << 13;
+    //     value ^= value >> 7;
+    //     value ^= value << 17;
+    // }
+
+    sleep_ms(1000);
+
+    utils.done(job_id, StressResponse{
+        .code = utils.SUCCESS,
+        .value = 1,
     });
 }
 
@@ -73,6 +177,12 @@ const REGISTRY = [_]RegistryEntry{
         .name = "increment",
         .name_len = 9,
         .fn_ptr = increment,
+    },
+    .{
+        .id = 1,
+        .name = "sleep",
+        .name_len = 5,
+        .fn_ptr = sleep,
     },
 };
 

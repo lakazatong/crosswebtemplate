@@ -47,7 +47,7 @@ const empty_job: Job = .{
 
 const SLOTS_SIZE = 64;
 
-pub var slots = [_]Job{empty_job} ** SLOTS_SIZE;
+pub var slots: [SLOTS_SIZE]Job = @splat(empty_job);
 
 // queue of slot indices
 var queue: [SLOTS_SIZE]usize = undefined;

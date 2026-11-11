@@ -10,6 +10,9 @@
 #include "json/json.hpp"
 #include "webview/webview.h"
 
+// internal
+#include "bridge/webview_bridge.hpp"
+
 // native
 #ifdef _WIN32
 #include <windows.h>
@@ -21,8 +24,8 @@
 
 using json = nlohmann::json;
 
-// Forward declare the Zig function
-extern "C" const char *increment(const char *ptr);
+void start_webview_bridge(webview::webview &w);
+void stop_webview_bridge();
 
 #ifndef _WIN32
 
@@ -163,12 +166,7 @@ void app(void)
 
             return R"({})"; });
 
-    w.bind("bridge_increment", [](const std::string &input) -> std::string
-           {
-            const char *result = increment(input.c_str());
-            if (!result) return R"({"error":"null result"})";
-            return std::string(result); });
-
+    WebViewBridge bridge(w);
     w.run();
 }
 #ifdef _WIN32
