@@ -19,17 +19,19 @@ export default function App() {
         //     increment({ value: count + 6 }),
         // ]);
         console.time("sequential");
-
+        const sequentialStart = performance.now();
         await sleep();
         await sleep();
-
+        const sequentialTime = performance.now() - sequentialStart;
         console.timeEnd("sequential");
 
         console.time("parallel");
+        const parallelStart = performance.now();
         const responses = await Promise.all([
             sleep(),
             sleep(),
         ]);
+        const parallelTime = performance.now() - parallelStart;
         console.timeEnd("parallel");
 
         console.log(responses);
@@ -43,7 +45,7 @@ export default function App() {
 
         const best = successful.reduce((a, b) => (b.value > a.value ? b : a));
 
-        setOrigin(best.origin);
+        setOrigin(`${best.origin} (seq: ${sequentialTime.toFixed(2)} ms, par: ${parallelTime.toFixed(2)} ms)`);
         setCount(best.value);
         console.log("allocs: ", await zigExport("alloc_count"));
         console.log("frees: ", await zigExport("free_count"));

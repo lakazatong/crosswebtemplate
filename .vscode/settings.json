@@ -11,5 +11,6 @@
     ],
     "files.associations": {
         "*.code-workspace.source": "jsonc"
-    }
+    },
+    "cmake.sourceDirectory": "C:/Users/Bo_wo/Desktop/code/crosswebtemplate/desktop"
 }

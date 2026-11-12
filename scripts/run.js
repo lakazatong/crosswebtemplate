@@ -2,13 +2,7 @@
 // std
 import os from "os";
 import path from "path";
-import {
-    cpSync,
-    existsSync,
-    readFileSync,
-    writeFileSync,
-    createReadStream,
-} from "fs";
+import { existsSync, readFileSync, writeFileSync, createReadStream } from "fs";
 import { createHash } from "crypto";
 // external
 import express from "express";
@@ -39,39 +33,20 @@ function runLinux() {
     const CONTAINER_NAME = "cwt-run-linux";
     const projectRoot = getProjectRoot();
 
-    const dockerTar = path.join(
-        projectRoot,
-        ".build",
-        "docker",
-        "linux-runtime.tar",
-    );
+    const dockerTar = path.join(projectRoot, ".build", "docker", "linux-runtime.tar");
     const wslInstallDir = path.join(projectRoot, ".build", "wsl", DISTRO_NAME);
 
-    const dockerfilePath = path.join(
-        projectRoot,
-        "desktop",
-        "docker",
-        "run-linux.Dockerfile",
-    );
-    const dockerHashFile = path.join(
-        projectRoot,
-        ".build",
-        "docker",
-        "linux-runtime.hash",
-    );
+    const dockerfilePath = path.join(projectRoot, "desktop", "docker", "run-linux.Dockerfile");
+    const dockerHashFile = path.join(projectRoot, ".build", "docker", "linux-runtime.hash");
 
     function getDockerfileHash() {
-        return createHash("sha256")
-            .update(readFileSync(dockerfilePath))
-            .digest("hex");
+        return createHash("sha256").update(readFileSync(dockerfilePath)).digest("hex");
     }
 
     function isRuntimeStale() {
         if (!existsSync(dockerTar)) return true;
         if (!existsSync(dockerHashFile)) return true;
-        return (
-            readFileSync(dockerHashFile, "utf8").trim() !== getDockerfileHash()
-        );
+        return readFileSync(dockerHashFile, "utf8").trim() !== getDockerfileHash();
     }
 
     function distroExists() {
@@ -80,22 +55,14 @@ function runLinux() {
             return list
                 .replace(/\0/g, "")
                 .split(/\r?\n/)
-                .some(
-                    (l) => l.trim().toLowerCase() === DISTRO_NAME.toLowerCase(),
-                );
+                .some((l) => l.trim().toLowerCase() === DISTRO_NAME.toLowerCase());
         } catch {
             return false;
         }
     }
 
     function buildRuntimeImage() {
-        run([
-            "docker",
-            "build",
-            `-f ${dockerfilePath}`,
-            `-t ${CONTAINER_NAME}`,
-            projectRoot,
-        ]);
+        run(["docker", "build", `-f ${dockerfilePath}`, `-t ${CONTAINER_NAME}`, projectRoot]);
     }
 
     function exportRootfs() {
@@ -112,15 +79,7 @@ function runLinux() {
     function importDistro() {
         ensureDir(wslInstallDir);
 
-        run([
-            "wsl",
-            "--import",
-            DISTRO_NAME,
-            wslInstallDir,
-            dockerTar,
-            "--version",
-            "2",
-        ]);
+        run(["wsl", "--import", DISTRO_NAME, wslInstallDir, dockerTar, "--version", "2"]);
     }
 
     function ensureDistro() {
@@ -174,16 +133,9 @@ function runLinux() {
         // WWW_PATH was baked in at cmake configure time as /app/.build/frontend (Docker path)
         // We override it here with the correct WSL mount path so the binary finds the frontend
         // See desktop/src/main.cpp and search for CWT_WWW_PATH
-        runInWsl(
-            toWslPath(
-                path.join(projectRoot, ".build", "linux", "debug", "cwt"),
-            ),
-            {
-                CWT_WWW_PATH: toWslPath(
-                    path.join(projectRoot, ".build", "frontend"),
-                ),
-            },
-        );
+        runInWsl(toWslPath(path.join(projectRoot, ".build", "linux", "debug", "cwt")), {
+            CWT_WWW_PATH: toWslPath(path.join(projectRoot, ".build", "frontend")),
+        });
     }
 }
 
@@ -204,9 +156,7 @@ function runWeb() {
             const ms = Date.now() - start;
             const status = res.statusCode;
             const statusText =
-                status < 400
-                    ? chalk.green(`Returned ${status}`)
-                    : chalk.red(`Returned ${status}`);
+                status < 400 ? chalk.green(`Returned ${status}`) : chalk.red(`Returned ${status}`);
             const date = chalk.gray(
                 (() => {
                     const d = new Date();
@@ -215,12 +165,8 @@ function runWeb() {
             );
             const ip = chalk.yellow(req.ip);
             const method = chalk.blue(req.method);
-            console.log(
-                ` ${chalk.bgBlue(" HTTP ")} ${date} ${ip} ${method} ${req.url}`,
-            );
-            console.log(
-                ` ${chalk.bgBlue(" HTTP ")} ${date} ${ip} ${statusText} in ${ms} ms`,
-            );
+            console.log(` ${chalk.bgBlue(" HTTP ")} ${date} ${ip} ${method} ${req.url}`);
+            console.log(` ${chalk.bgBlue(" HTTP ")} ${date} ${ip} ${statusText} in ${ms} ms`);
         });
         next();
     });
@@ -229,13 +175,7 @@ function runWeb() {
         app.use(express.static(path.join(projectRoot, "dist", "web")));
     } else {
         app.get("/core.wasm", (req, res) => {
-            const wasmPath = path.join(
-                buildRoot,
-                "zig",
-                "web",
-                "debug",
-                "core.wasm",
-            );
+            const wasmPath = path.join(buildRoot, "zig", "web", "debug", "core.wasm");
             res.setHeader("Content-Type", "application/wasm");
             createReadStream(wasmPath).pipe(res);
         });
@@ -246,9 +186,7 @@ function runWeb() {
     const networkIp = Object.values(os.networkInterfaces())
         .flat()
         .find((i) => i.family === "IPv4" && !i.internal)?.address;
-    const networkUrl = networkIp
-        ? `http://${networkIp}:${port}`
-        : "unavailable";
+    const networkUrl = networkIp ? `http://${networkIp}:${port}` : "unavailable";
 
     const server = app.listen(port, () => {
         const padLine = (content) =>
@@ -264,9 +202,7 @@ function runWeb() {
             chalk.green(padLine(chalk.white(`- Local:    ${localUrl}`))),
             chalk.green(padLine(chalk.white(`- Network:  ${networkUrl}`))),
             chalk.green("   │                                           │"),
-            chalk.green(
-                padLine(chalk.gray("Copied local address to clipboard!")),
-            ),
+            chalk.green(padLine(chalk.gray("Copied local address to clipboard!"))),
             chalk.green("   │                                           │"),
             chalk.green("   └───────────────────────────────────────────┘"),
             "",
@@ -278,9 +214,7 @@ function runWeb() {
     function onSIGINT() {
         process.off("SIGINT", onSIGINT);
 
-        console.log(
-            `\n ${chalk.bgMagenta(" INFO ")} Gracefully shutting down. Please wait...`,
-        );
+        console.log(`\n ${chalk.bgMagenta(" INFO ")} Gracefully shutting down. Please wait...`);
 
         server.close(() => {
             process.exit(0);
@@ -300,14 +234,9 @@ function runAndroid() {
     // when changing from debug to release
     // the signature can differ and we would get
     // adb.exe: failed to install mobile/android/app/build/outputs/apk/[...]: Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package [...] signatures do not match newer version; ignoring!]
-    const isInstalled = runCapture([
-        "adb",
-        "shell",
-        "pm",
-        "list",
-        "packages",
+    const isInstalled = runCapture(["adb", "shell", "pm", "list", "packages", namespace]).includes(
         namespace,
-    ]).includes(namespace);
+    );
 
     const lastIsRelease = readCacheEntry("android.is_release");
 

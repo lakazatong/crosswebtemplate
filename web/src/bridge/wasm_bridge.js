@@ -70,7 +70,7 @@ export default class WASMBridge {
         });
     }
 
-    static async create(wasmBytes, numWorkers = navigator.hardwareConcurrency || 4) {
+    static async create(wasmBytes, numWorkers = navigator.hardwareConcurrency || 1) {
         const module = await WebAssembly.compile(wasmBytes);
 
         const memory = new WebAssembly.Memory({

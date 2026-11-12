@@ -4,6 +4,13 @@
 #include <exception>
 #include <string>
 #include <utility>
+#include <stdexcept>
+
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <dlfcn.h>
+#endif
 
 // external
 #include "json/json.hpp"
@@ -114,13 +121,10 @@ void WebViewBridge::start()
 
     dispatchInit();
 
-    // std::size_t count = std::thread::hardware_concurrency();
+    std::size_t count = std::thread::hardware_concurrency();
 
-    // if (count == 0)
-    // {
-    //     count = 4;
-    // }
-    std::size_t count = 1;
+    if (count == 0)
+        count = 1;
 
     workers_.reserve(count);
 
@@ -132,9 +136,13 @@ void WebViewBridge::start()
 
 std::uint32_t WebViewBridge::get_export(const std::string &name)
 {
+#ifdef _WIN32
     HMODULE module = GetModuleHandleW(nullptr);
-
     FARPROC symbol = GetProcAddress(module, name.c_str());
+#else
+    void *module = dlopen(nullptr, RTLD_NOW);
+    void *symbol = dlsym(module, name.c_str());
+#endif
 
     if (!symbol)
     {

@@ -150,8 +150,7 @@ void app(void)
 
 #endif /* _WIN32 */
 
-    w.bind("start_dragging", [&](const std::string &input) -> std::string
-           {
+    w.bind("start_dragging", [&](const std::string &input) -> std::string {
             json j = json::parse(input, nullptr, false);
 
             if (j.is_discarded())
@@ -171,8 +170,7 @@ void app(void)
 }
 #ifdef _WIN32
 
-int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/, LPSTR /*lpCmdLine*/,
-                   int /*nCmdShow*/)
+int WINAPI WinMain(HINSTANCE /*hInst*/, HINSTANCE /*hPrevInst*/, LPSTR /*lpCmdLine*/, int /*nCmdShow*/)
 {
 
 #ifdef _MSC_VER
