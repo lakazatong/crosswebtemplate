@@ -47,7 +47,11 @@ npm run export:android # build release and output to dist/android
 
 See `package.json` for more.
 
-Use the following command
+In order to build for Android, make sure of the following:
+
+- Have `C:/Program Files/Android/Android Studio/jbr/bin` on PATH.
+- Provide a `sdk.dir` entry in `mobile/android/local.properties`, usually `C:/Users/Bo_wo/AppData/Local/Android/Sdk`.
+- Use the following command
 
 ```bash
 keytool -genkeypair -v -keystore crosswebtemplate.keystore -alias crosswebtemplate -keyalg RSA -keysize 2048 -validity 10000

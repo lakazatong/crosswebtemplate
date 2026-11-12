@@ -11,10 +11,7 @@ export async function generateAndroidIcons() {
     const projectRoot = getProjectRoot();
     const src = path.join(projectRoot, "src/assets/icons/favicon.svg");
 
-    const androidResDir = path.join(
-        projectRoot,
-        "mobile/android/app/src/main/res",
-    );
+    const androidResDir = path.join(projectRoot, "mobile/android/app/src/main/res");
 
     // Remove and recreate anydpi-v26 folder
     const anydpiDir = path.join(androidResDir, "mipmap-anydpi-v26");
@@ -30,10 +27,7 @@ export async function generateAndroidIcons() {
 </adaptive-icon>`;
 
     writeFileSync(path.join(anydpiDir, "ic_launcher.xml"), adaptiveIconXml);
-    writeFileSync(
-        path.join(anydpiDir, "ic_launcher_round.xml"),
-        adaptiveIconXml,
-    );
+    writeFileSync(path.join(anydpiDir, "ic_launcher_round.xml"), adaptiveIconXml);
 
     // Generate background color in values
     const valuesDir = path.join(androidResDir, "values");
@@ -120,10 +114,10 @@ export async function generateProjectIcons() {
     switch (platform) {
         case "android":
             await generateAndroidIcons();
-            break;
+            return;
+        default:
+            throw new Error(`Unknown platform: ${platform}`);
     }
-
-    throw new Error(`Unknown platform: ${platform}`);
 }
 
 if (isMain(import.meta.url)) {

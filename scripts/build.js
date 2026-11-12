@@ -30,14 +30,7 @@ function cmdWithMSVC(cmd) {
 }
 
 function getDockerCommand() {
-    return [
-        "docker",
-        "run",
-        "--rm",
-        `-v ${projectRoot}:/app`,
-        "-w /app",
-        "cwt-build-linux",
-    ];
+    return ["docker", "run", "--rm", `-v ${projectRoot}:/app`, "-w /app", "cwt-build-linux"];
 }
 
 function getZigBuildCommand(action, target, out, extra = []) {
@@ -74,12 +67,12 @@ function getFrontendBuildCommand(platform) {
     return ["vite", "build", `--outDir ${buildDir}`, `--mode ${platform}`];
 }
 
-function runPipeline(pipeline) {
+async function runPipeline(pipeline) {
     for (const cmdArrayOrFunction of pipeline) {
         if (Array.isArray(cmdArrayOrFunction)) {
             run(cmdArrayOrFunction);
         } else {
-            cmdArrayOrFunction();
+            await cmdArrayOrFunction();
         }
     }
 }
@@ -101,10 +94,7 @@ export async function buildProject(platform) {
         case "windows":
             ensureDir(buildDir);
             ensureDir(zigOutDir);
-            const desktopSourceDir = path.join(
-                projectRoot,
-                relativeDesktopSourceDir,
-            );
+            const desktopSourceDir = path.join(projectRoot, relativeDesktopSourceDir);
             runPipeline([
                 getZigBuildCommand(
                     "build-lib",
@@ -112,9 +102,7 @@ export async function buildProject(platform) {
                     path.join(zigOutDir, "core.lib"),
                     ["-static", "-fcompiler-rt"],
                 ),
-                cmdWithMSVC(
-                    getCMakeConfigureCommand(desktopSourceDir, buildDir),
-                ),
+                cmdWithMSVC(getCMakeConfigureCommand(desktopSourceDir, buildDir)),
                 cmdWithMSVC(getCMakeBuildCommand(buildDir)),
                 getFrontendBuildCommand(platform),
             ]);
@@ -133,12 +121,7 @@ export async function buildProject(platform) {
                     "docker",
                     "build",
                     "-f",
-                    path.join(
-                        projectRoot,
-                        "desktop",
-                        "docker",
-                        "build-linux.Dockerfile",
-                    ),
+                    path.join(projectRoot, "desktop", "docker", "build-linux.Dockerfile"),
                     "-t",
                     "cwt-build-linux",
                     projectRoot,
@@ -151,15 +134,9 @@ export async function buildProject(platform) {
                 ),
                 [
                     ...getDockerCommand(),
-                    ...getCMakeConfigureCommand(
-                        relativeDesktopSourceDir,
-                        relativeBuildDir,
-                    ),
+                    ...getCMakeConfigureCommand(relativeDesktopSourceDir, relativeBuildDir),
                 ],
-                [
-                    ...getDockerCommand(),
-                    ...getCMakeBuildCommand(relativeBuildDir),
-                ],
+                [...getDockerCommand(), ...getCMakeBuildCommand(relativeBuildDir)],
                 getFrontendBuildCommand(platform),
             ]);
             break;
@@ -191,13 +168,7 @@ export async function buildProject(platform) {
                     process.env.ANDROID_SDK_ROOT ??
                     process.env.ANDROID_HOME ??
                     (process.platform === "win32"
-                        ? path.join(
-                              os.homedir(),
-                              "AppData",
-                              "Local",
-                              "Android",
-                              "Sdk",
-                          )
+                        ? path.join(os.homedir(), "AppData", "Local", "Android", "Sdk")
                         : process.platform === "darwin"
                           ? path.join(os.homedir(), "Library", "Android", "sdk")
                           : path.join(os.homedir(), "Android", "Sdk"));
@@ -226,32 +197,16 @@ export async function buildProject(platform) {
                     throw new Error("No valid NDK versions found.");
                 }
 
-                return candidates.reduce((a, b) => (a.value > b.value ? a : b))
-                    .path;
+                return candidates.reduce((a, b) => (a.value > b.value ? a : b)).path;
             }
 
             const ndk = findLatestNdk();
-            const ndkWindows = path.join(
-                ndk,
-                "toolchains",
-                "llvm",
-                "prebuilt",
-                "windows-x86_64",
-            );
+            const ndkWindows = path.join(ndk, "toolchains", "llvm", "prebuilt", "windows-x86_64");
 
             function getZigLinkCommand() {
-                const clang = path.join(
-                    ndkWindows,
-                    "bin",
-                    "aarch64-linux-android24-clang.cmd",
-                );
+                const clang = path.join(ndkWindows, "bin", "aarch64-linux-android24-clang.cmd");
                 const soFile = path.join(androidZigOutDir, "libcore.so");
-                const jniInclude = path.join(
-                    ndkWindows,
-                    "sysroot",
-                    "usr",
-                    "include",
-                );
+                const jniInclude = path.join(ndkWindows, "sysroot", "usr", "include");
                 return [
                     clang,
                     "-shared",
@@ -281,12 +236,7 @@ export async function buildProject(platform) {
             const objFile = path.join(androidZigOutDir, "core.o");
 
             runPipeline([
-                getZigBuildCommand(
-                    "build-obj",
-                    "aarch64-linux-android",
-                    objFile,
-                    ["-fPIC"],
-                ),
+                getZigBuildCommand("build-obj", "aarch64-linux-android", objFile, ["-fPIC"]),
                 getZigLinkCommand(),
                 generateAndroidIcons,
                 // we need the frontend sources before gradle bundles them in the apk

@@ -67,8 +67,8 @@ android {
                 .orElse("debug")
                 .get()
 
-            assets.srcDirs("../../../.build/frontend")
-            jniLibs.srcDirs("../../../.build/zig/android/$zigMode")
+            assets.directories.add("../../../.build/frontend")
+            jniLibs.directories.add("../../../.build/zig/android/$zigMode")
         }
     }
 
