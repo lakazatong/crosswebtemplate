@@ -1,17 +1,21 @@
 export default class WebViewBridge {
+    #workerCount = 0;
     #fnMap = new Map();
     #pendingJobs = new Map();
 
-    constructor(registry) {
+    constructor(registry, numWorkers) {
         if (!Array.isArray(registry)) {
             throw new TypeError("Expected registry to be an array");
         }
+
+        this.#workerCount = numWorkers;
 
         for (let fn_id = 0; fn_id < registry.length; fn_id++) {
             this.#fnMap.set(registry[fn_id], fn_id);
         }
 
         window.__cwtBridge = this;
+        console.log("WebViewBridge worker count:", this.#workerCount);
     }
 
     async zigExport(name) {
@@ -22,9 +26,7 @@ export default class WebViewBridge {
     static async create() {
         const { registry, worker_count } = JSON.parse(await window.bridge_get_registry(""));
 
-        console.log("WebViewBridge worker count:", worker_count);
-
-        return new WebViewBridge(registry);
+        return new WebViewBridge(registry, worker_count);
     }
 
     async #handleJobDone(job_id) {

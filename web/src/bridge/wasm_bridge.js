@@ -12,14 +12,16 @@ export default class WASMBridge {
     #memory;
     #mainInstance;
 
+    #workerCount = 0;
     #workers = [];
     #pendingJobs = new Map();
     #fnMap = {};
 
-    constructor(module, memory, mainInstance, signalBuffer) {
+    constructor(module, memory, mainInstance, signalBuffer, numWorkers) {
         this.#module = module;
         this.#memory = memory;
         this.#mainInstance = mainInstance;
+        this.#workerCount = numWorkers;
 
         const count = mainInstance.exports.getRegistryCount();
 
@@ -31,6 +33,7 @@ export default class WASMBridge {
         }
 
         this.signal = new Int32Array(signalBuffer);
+        console.log("WASMBridge worker count:", this.#workerCount);
     }
 
     zigExport(name) {
@@ -89,9 +92,7 @@ export default class WASMBridge {
             },
         });
 
-        const bridge = new WASMBridge(module, memory, mainInstance, signalBuffer);
-
-        console.log("WASMBridge worker count:", numWorkers);
+        const bridge = new WASMBridge(module, memory, mainInstance, signalBuffer, numWorkers);
 
         await Promise.all(
             Array.from({ length: numWorkers }, () => bridge.#spawnWorker(signalBuffer)),

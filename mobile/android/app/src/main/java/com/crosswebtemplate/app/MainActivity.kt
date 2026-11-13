@@ -1,32 +1,31 @@
 package com.crosswebtemplate.app
 
-import android.net.Uri
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.os.Bundle
-import android.webkit.WebViewClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.webkit.WebViewAssetLoader;
-import androidx.webkit.WebViewClientCompat;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
-import android.webkit.WebView;
+import androidx.webkit.WebViewAssetLoader
+import androidx.webkit.WebViewClientCompat
 
 class MainActivity : AppCompatActivity() {
+    private var nativeBridge: Bridge? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (BuildConfig.DEBUG) {
-            WebView.setWebContentsDebuggingEnabled(true)
-        } else {
-            WebView.setWebContentsDebuggingEnabled(false)
-        }
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
 
         val webView = WebView(this)
         setContentView(webView)
 
-        webView.addJavascriptInterface(Bridge(), "AndroidBridge")
+        val bridge = Bridge(webView)
+        nativeBridge = bridge
+        webView.addJavascriptInterface(bridge, "AndroidBridge")
+        bridge.start()
 
         if (BuildConfig.DEBUG) {
             webView.webChromeClient = object : android.webkit.WebChromeClient() {
@@ -65,9 +64,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
 
-        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html");
+        webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
+    }
+
+    override fun onDestroy() {
+        nativeBridge?.stop()
+        nativeBridge = null
+        super.onDestroy()
     }
 }

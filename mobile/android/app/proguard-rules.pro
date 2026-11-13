@@ -5,6 +5,6 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
--keepclassmembers class com.crosswebtemplate.app.Bridge {
-    public *;
+-keep class com.crosswebtemplate.app.Bridge {
+    *;
 }
