@@ -18,15 +18,15 @@ export default function App() {
         //     increment({ value: count + 5 }),
         //     increment({ value: count + 6 }),
         // ]);
-        console.time("sequential");
         const sequentialStart = performance.now();
+        console.time("sequential");
         await sleep();
         await sleep();
         const sequentialTime = performance.now() - sequentialStart;
         console.timeEnd("sequential");
 
-        console.time("parallel");
         const parallelStart = performance.now();
+        console.time("parallel");
         const responses = await Promise.all([
             sleep(),
             sleep(),

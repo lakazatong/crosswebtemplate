@@ -1,4 +1,4 @@
-export default class WebViewBridge {
+export default class DesktopBridge {
     #workerCount = 0;
     #fnMap = new Map();
     #pendingJobs = new Map();
@@ -15,7 +15,7 @@ export default class WebViewBridge {
         }
 
         window.__cwtBridge = this;
-        console.log("WebViewBridge worker count:", this.#workerCount);
+        console.log("Desktop bridge worker count:", this.#workerCount);
     }
 
     async zigExport(name) {
@@ -26,7 +26,7 @@ export default class WebViewBridge {
     static async create() {
         const { registry, worker_count } = JSON.parse(await window.bridge_get_registry(""));
 
-        return new WebViewBridge(registry, worker_count);
+        return new DesktopBridge(registry, worker_count);
     }
 
     async #handleJobDone(job_id) {

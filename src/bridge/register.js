@@ -1,37 +1,36 @@
-let wasmPromise = null;
+let webPromise = null;
 let desktopPromise = null;
 let androidPromise = null;
 
 function getBridge() {
     if (["development", "web"].includes(__PLATFORM__)) {
-        if (!wasmPromise) {
-            wasmPromise = fetch("/core.wasm")
+        if (!webPromise) {
+            webPromise = fetch("/core.wasm")
                 .then(async (response) => {
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-                    const WASMBridge = (await import("../../web/src/bridge/wasm_bridge.js"))
-                        .default;
+                    const WebBridge = (await import("../../web/src/bridge/web_bridge.js")).default;
 
                     const bytes = await response.arrayBuffer();
-                    const bridge = await WASMBridge.create(bytes);
+                    const bridge = await WebBridge.create(bytes);
 
-                    console.log("WASM bridge loaded successfully.");
+                    console.log("Web bridge loaded successfully.");
 
                     return bridge;
                 })
                 .catch((err) => {
-                    console.error("WASM bridge failed to load:", err);
-                    wasmPromise = null;
+                    console.error("Web bridge failed to load:", err);
+                    webPromise = null;
                     throw err;
                 });
         }
 
-        return wasmPromise;
+        return webPromise;
     }
 
     if (["windows", "linux"].includes(__PLATFORM__)) {
         if (!desktopPromise) {
-            desktopPromise = import("../../desktop/src/bridge/webview_bridge.js")
+            desktopPromise = import("../../desktop/src/bridge/desktop_bridge.js")
                 .then(async ({ default: DesktopBridge }) => {
                     const bridge = await DesktopBridge.create();
 

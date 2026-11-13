@@ -15,7 +15,7 @@ export default class AndroidBridge {
         }
 
         window.__cwtBridge = this;
-        console.log("AndroidBridge worker count:", this.#workerCount);
+        console.log("Android bridge worker count:", this.#workerCount);
     }
 
     async zigExport(name) {

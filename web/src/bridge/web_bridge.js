@@ -7,7 +7,7 @@ function readString(mem, ptr, len) {
     return decoder.decode(new Uint8Array(mem.buffer, ptr, len).slice());
 }
 
-export default class WASMBridge {
+export default class WebBridge {
     #module;
     #memory;
     #mainInstance;
@@ -33,7 +33,7 @@ export default class WASMBridge {
         }
 
         this.signal = new Int32Array(signalBuffer);
-        console.log("WASMBridge worker count:", this.#workerCount);
+        console.log("Web bridge worker count:", this.#workerCount);
     }
 
     zigExport(name) {
@@ -92,7 +92,7 @@ export default class WASMBridge {
             },
         });
 
-        const bridge = new WASMBridge(module, memory, mainInstance, signalBuffer, numWorkers);
+        const bridge = new WebBridge(module, memory, mainInstance, signalBuffer, numWorkers);
 
         await Promise.all(
             Array.from({ length: numWorkers }, () => bridge.#spawnWorker(signalBuffer)),
