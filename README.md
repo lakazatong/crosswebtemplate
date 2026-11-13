@@ -57,8 +57,17 @@ In order to build for Android, make sure of the following:
 keytool -genkeypair -v -keystore crosswebtemplate.keystore -alias crosswebtemplate -keyalg RSA -keysize 2048 -validity 10000
 ```
 
-or similar under `mobile/android/` in order to generate the signature for android release APK.
-Otherwise, `npm run android:release` will fail.
+or similar under `mobile/android/app` in order to generate the signature for android release APK.
+Otherwise, `npm run android:release` will fail. It also requires a `mobile\android\keystore.properties` file, here is a template:
+
+```
+storeFile=crosswebtemplate.keystore
+storePassword=YOUR_PASSWORD
+keyAlias=crosswebtemplate
+keyPassword=YOUR_PASSWORD
+```
+
+`YOUR_PASSWORD` is the same one you used when creating the certificate with the `keytool` command (yes, it can be used both for `storePassword` and `keyPassword`).
 
 ## Alternatives
 

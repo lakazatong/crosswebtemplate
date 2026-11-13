@@ -17,4 +17,4 @@
 app/src/main/res/*/*.webp
 
 /keystore.properties
-/*.keystore
+*.keystore
