@@ -129,6 +129,7 @@ elseif(UNIX)
     # install(FILES packaging/app.desktop DESTINATION share/applications)
     # install(FILES assets/icon.png DESTINATION share/pixmaps)
     target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE "-Wl,-z,noexecstack")
+    set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES ENABLE_EXPORTS ON)
 endif()
 
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")

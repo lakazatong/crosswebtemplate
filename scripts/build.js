@@ -15,6 +15,7 @@ import {
     isMain,
     run,
     runCapture,
+    isWindows,
 } from "./_utils.js";
 import { generateAndroidIcons } from "./generate-icons.js";
 
@@ -110,35 +111,53 @@ export async function buildProject(platform) {
         case "linux":
             ensureDir(buildDir);
             ensureDir(zigOutDir);
-            try {
-                runCapture(["docker", "info"]);
-            } catch {
-                throw new Error("Docker engine isn't running");
+            function buildLinuxOnWindows() {
+                try {
+                    runCapture(["docker", "info"]);
+                } catch {
+                    throw new Error("Docker engine isn't running");
+                }
+
+                runPipeline([
+                    [
+                        "docker",
+                        "build",
+                        "-f",
+                        path.join(projectRoot, "desktop", "docker", "build-linux.Dockerfile"),
+                        "-t",
+                        "cwt-build-linux",
+                        projectRoot,
+                    ],
+                    getZigBuildCommand(
+                        "build-lib",
+                        "x86_64-linux-gnu",
+                        path.join(zigOutDir, "core.a"),
+                        ["-static", "-fcompiler-rt", "-fPIC"],
+                    ),
+                    [
+                        ...getDockerCommand(),
+                        ...getCMakeConfigureCommand(relativeDesktopSourceDir, relativeBuildDir),
+                    ],
+                    [...getDockerCommand(), ...getCMakeBuildCommand(relativeBuildDir)],
+                    getFrontendBuildCommand(platform),
+                ]);
             }
 
-            runPipeline([
-                [
-                    "docker",
-                    "build",
-                    "-f",
-                    path.join(projectRoot, "desktop", "docker", "build-linux.Dockerfile"),
-                    "-t",
-                    "cwt-build-linux",
-                    projectRoot,
-                ],
-                getZigBuildCommand(
-                    "build-lib",
-                    "x86_64-linux-gnu",
-                    path.join(zigOutDir, "core.a"),
-                    ["-static", "-fcompiler-rt", "-fPIC"],
-                ),
-                [
-                    ...getDockerCommand(),
-                    ...getCMakeConfigureCommand(relativeDesktopSourceDir, relativeBuildDir),
-                ],
-                [...getDockerCommand(), ...getCMakeBuildCommand(relativeBuildDir)],
-                getFrontendBuildCommand(platform),
-            ]);
+            function buildLinuxOnLinux() {
+                return runPipeline([
+                    getZigBuildCommand(
+                        "build-lib",
+                        "x86_64-linux-gnu",
+                        path.join(zigOutDir, "core.a"),
+                        ["-static", "-fcompiler-rt", "-fPIC"],
+                    ),
+                    getCMakeConfigureCommand(relativeDesktopSourceDir, buildDir),
+                    getCMakeBuildCommand(buildDir),
+                    getFrontendBuildCommand(platform),
+                ]);
+            }
+
+            (isWindows() ? buildLinuxOnWindows : buildLinuxOnLinux)();
             break;
         case "web":
             ensureDir(zigOutDir);

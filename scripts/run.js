@@ -23,120 +23,133 @@ import {
     readCacheEntry,
     writeCacheEntry,
     deleteCacheEntry,
+    isWindows,
 } from "./_utils.js";
 
 const projectRoot = getProjectRoot();
 const isRelease = getMode() === "release";
 
 function runLinux() {
-    const DISTRO_NAME = "cwt-linux";
-    const CONTAINER_NAME = "cwt-run-linux";
-    const projectRoot = getProjectRoot();
+    function runLinuxOnWindows() {
+        const DISTRO_NAME = "cwt-linux";
+        const CONTAINER_NAME = "cwt-run-linux";
 
-    const dockerTar = path.join(projectRoot, ".build", "docker", "linux-runtime.tar");
-    const wslInstallDir = path.join(projectRoot, ".build", "wsl", DISTRO_NAME);
+        const dockerTar = path.join(projectRoot, ".build", "docker", "linux-runtime.tar");
+        const wslInstallDir = path.join(projectRoot, ".build", "wsl", DISTRO_NAME);
 
-    const dockerfilePath = path.join(projectRoot, "desktop", "docker", "run-linux.Dockerfile");
-    const dockerHashFile = path.join(projectRoot, ".build", "docker", "linux-runtime.hash");
+        const dockerfilePath = path.join(projectRoot, "desktop", "docker", "run-linux.Dockerfile");
+        const dockerHashFile = path.join(projectRoot, ".build", "docker", "linux-runtime.hash");
 
-    function getDockerfileHash() {
-        return createHash("sha256").update(readFileSync(dockerfilePath)).digest("hex");
-    }
+        function getDockerfileHash() {
+            return createHash("sha256").update(readFileSync(dockerfilePath)).digest("hex");
+        }
 
-    function isRuntimeStale() {
-        if (!existsSync(dockerTar)) return true;
-        if (!existsSync(dockerHashFile)) return true;
-        return readFileSync(dockerHashFile, "utf8").trim() !== getDockerfileHash();
-    }
+        function isRuntimeStale() {
+            if (!existsSync(dockerTar)) return true;
+            if (!existsSync(dockerHashFile)) return true;
+            return readFileSync(dockerHashFile, "utf8").trim() !== getDockerfileHash();
+        }
 
-    function distroExists() {
-        try {
-            const list = runCapture(["wsl", "--list", "--quiet"]);
-            return list
-                .replace(/\0/g, "")
-                .split(/\r?\n/)
-                .some((l) => l.trim().toLowerCase() === DISTRO_NAME.toLowerCase());
-        } catch {
-            return false;
+        function distroExists() {
+            try {
+                const list = runCapture(["wsl", "--list", "--quiet"]);
+                return list
+                    .replace(/\0/g, "")
+                    .split(/\r?\n/)
+                    .some((l) => l.trim().toLowerCase() === DISTRO_NAME.toLowerCase());
+            } catch {
+                return false;
+            }
+        }
+
+        function buildRuntimeImage() {
+            run(["docker", "build", "-f", dockerfilePath, "-t", CONTAINER_NAME, projectRoot]);
+        }
+
+        function exportRootfs() {
+            ensureDir(path.dirname(dockerTar));
+            const containerId = runCapture(["docker", "create", CONTAINER_NAME]);
+            try {
+                run(["docker", "export", "-o", dockerTar, containerId]);
+            } finally {
+                run(["docker", "rm", containerId]);
+            }
+            writeFileSync(dockerHashFile, getDockerfileHash());
+        }
+
+        function importDistro() {
+            ensureDir(wslInstallDir);
+            run(["wsl", "--import", DISTRO_NAME, wslInstallDir, dockerTar, "--version", "2"]);
+        }
+
+        function ensureDistro() {
+            const stale = isRuntimeStale();
+
+            if (stale && distroExists()) {
+                run(["wsl", "--unregister", DISTRO_NAME]);
+            }
+
+            if (stale) {
+                buildRuntimeImage();
+                exportRootfs();
+            }
+
+            if (!distroExists()) {
+                importDistro();
+            }
+        }
+
+        function toWslPath(winPath) {
+            const forward = winPath.replaceAll("\\", "/");
+            const match = forward.match(/^([A-Za-z]):\/(.*)$/);
+            if (!match) throw new Error(`Cannot convert to WSL path: ${winPath}`);
+            return `/mnt/${match[1].toLowerCase()}/${match[2]}`;
+        }
+
+        function runInWsl(wslBinaryPath, env = {}) {
+            const envPairs = Object.entries({ GDK_BACKEND: "x11", ...env })
+                .map(([k, v]) => `${k}=${v}`)
+                .join(" ");
+
+            run([
+                "wsl",
+                `-d ${DISTRO_NAME}`,
+                "-u ubuntu",
+                "--",
+                "bash",
+                "-c",
+                `"env ${envPairs} ${wslBinaryPath}"`,
+            ]);
+        }
+
+        ensureDistro();
+
+        if (isRelease) {
+            runInWsl(toWslPath(path.join(projectRoot, "dist", "linux", "cwt")));
+        } else {
+            runInWsl(toWslPath(path.join(projectRoot, ".build", "linux", "debug", "cwt")), {
+                CWT_WWW_PATH: toWslPath(path.join(projectRoot, ".build", "frontend")),
+            });
         }
     }
 
-    function buildRuntimeImage() {
-        run(["docker", "build", `-f ${dockerfilePath}`, `-t ${CONTAINER_NAME}`, projectRoot]);
-    }
+    function runLinuxOnLinux() {
+        const executablePath = isRelease
+            ? path.join(projectRoot, "dist", "linux", "cwt")
+            : path.join(projectRoot, ".build", "linux", "debug", "cwt");
 
-    function exportRootfs() {
-        ensureDir(path.dirname(dockerTar));
-        const containerId = runCapture(["docker", "create", CONTAINER_NAME]);
-        try {
-            run(["docker", "export", "-o", dockerTar, containerId]);
-        } finally {
-            run(["docker", "rm", containerId]);
-        }
-        writeFileSync(dockerHashFile, getDockerfileHash());
-    }
-
-    function importDistro() {
-        ensureDir(wslInstallDir);
-
-        run(["wsl", "--import", DISTRO_NAME, wslInstallDir, dockerTar, "--version", "2"]);
-    }
-
-    function ensureDistro() {
-        const stale = isRuntimeStale();
-
-        if (stale && distroExists()) {
-            run(["wsl", "--unregister", DISTRO_NAME]);
-        }
-
-        if (stale) {
-            buildRuntimeImage();
-            exportRootfs();
-        }
-
-        if (!distroExists()) {
-            importDistro();
+        if (isRelease) {
+            run([executablePath]);
+        } else {
+            run([
+                "env",
+                `CWT_WWW_PATH=${path.join(projectRoot, ".build", "frontend")}`,
+                executablePath,
+            ]);
         }
     }
 
-    function toWslPath(winPath) {
-        const forward = winPath.replaceAll("\\", "/");
-        // Match drive letter at start: "C:/..."
-        const match = forward.match(/^([A-Za-z]):\/(.*)$/);
-        if (!match) throw new Error(`Cannot convert to WSL path: ${winPath}`);
-        const letter = match[1].toLowerCase();
-        const rest = match[2];
-        return `/mnt/${letter}/${rest}`;
-    }
-
-    function runInWsl(wslBinaryPath, env = {}) {
-        const envPairs = Object.entries({ GDK_BACKEND: "x11", ...env })
-            .map(([k, v]) => `${k}=${v}`)
-            .join(" ");
-
-        run([
-            "wsl",
-            `-d ${DISTRO_NAME}`,
-            `-u ubuntu`,
-            "--",
-            "bash",
-            "-c",
-            `"env ${envPairs} ${wslBinaryPath}"`,
-        ]);
-    }
-
-    ensureDistro();
-
-    if (isRelease) {
-        runInWsl(toWslPath(path.join(projectRoot, "dist", "linux", "cwt")));
-    } else {
-        // WWW_PATH was baked in at cmake configure time as /app/.build/frontend (Docker path)
-        // We override it here with the correct WSL mount path so the binary finds the frontend
-        // See desktop/src/main.cpp and search for CWT_WWW_PATH
-        runInWsl(toWslPath(path.join(projectRoot, ".build", "linux", "debug", "cwt")), {
-            CWT_WWW_PATH: toWslPath(path.join(projectRoot, ".build", "frontend")),
-        });
-    }
+    (isWindows() ? runLinuxOnWindows : runLinuxOnLinux)();
 }
 
 function runWeb() {

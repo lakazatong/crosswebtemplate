@@ -44,10 +44,6 @@ export default class DesktopBridge {
                 await window.bridge_take_output(JSON.stringify({ job_id })),
             );
 
-            console.log("(#handleJobDone) response type and value");
-            console.log(typeof response);
-            console.log(response);
-
             if (response.error) {
                 throw new Error(response.error);
             }

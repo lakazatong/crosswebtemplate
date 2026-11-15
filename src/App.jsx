@@ -34,7 +34,7 @@ export default function App() {
         const parallelTime = performance.now() - parallelStart;
         console.timeEnd("parallel");
 
-        console.log(responses);
+        // console.log(responses);
 
         const successful = responses.filter((response) => response.code === 0);
 

@@ -4,12 +4,6 @@
 
 A minimal template for shipping the same frontend across Windows, Linux, Web, and Android with a Zig core callable from JS on every platform.
 
-The bridge between JS and Zig differs per platform:
-
-- **Windows / Linux**: Zig compiles to a native library, exposed to the WebView via bound functions.
-- **Web**: Zig compiles to WASM, called directly from JS.
-- **Android**: Zig compiles to a `.so`, exposed via JNI and a `JavascriptInterface` bridge.
-
 ## Bundle sizes
 
 These are obtained by running `npm run export:all`, and checking the size of every folder under `dist/`.
@@ -23,13 +17,18 @@ These are obtained by running `npm run export:all`, and checking the size of eve
 
 ## Requirements
 
-- Windows (only supported host for now)
+If you are on Windows:
+
 - [Node + npm](https://nodejs.org/en/download/): build system
-- [Zig 0.16](https://ziglang.org/download/#release-0.16.0): native core
+- [Zig 0.17.1](https://ziglang.org/download/#release-0.17.1): native core
 - [Build Tools for Visual Studio 2026](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2026): CMake + MSVC, needed to build the Windows and Linux targets
 - [Ninja 1.13](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages): needed by CMake
 - [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/): used to cross-compile the Linux target from Windows
 - [Android Studio](https://developer.android.com/studio): provides Gradle, Kotlin, the Android NDK and platform-tools like `adb` for the Android target. Make sure `adb` is on PATH, typically at `C:/Users/<you>/AppData/Local/Android/Sdk/platform-tools/adb.exe`.
+
+If you are on Linux (Arch is the only tested distro for now):
+
+- `sudo pacman -S --needed nodejs npm zig cmake ninja base-devel pkgconf gtk3 openssl webkit2gtk-4.1`
 
 ## Basic Usage
 

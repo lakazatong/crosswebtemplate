@@ -3,8 +3,7 @@ import fs from "fs";
 import path from "path";
 import { mkdirSync } from "fs";
 import { execSync } from "child_process";
-import { fileURLToPath } from "url";
-
+import { fileURLToPath, pathToFileURL } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const projectRoot = path.resolve(__dirname, "..");
@@ -36,7 +35,7 @@ export function getZigOutDir(platform) {
 }
 
 export function isMain(url) {
-    return url === `file:///${process.argv[1]}`.replaceAll("\\", "/");
+    return url === pathToFileURL(path.resolve(process.argv[1])).href;
 }
 
 export function ensureDir(dirPath) {
@@ -107,4 +106,8 @@ export function deleteCacheEntry(key) {
     const cache = readCache();
     delete cache[key]; // noop if it doesn't exist
     writeCache(cache);
+}
+
+export function isWindows() {
+    return process.platform === "win32";
 }

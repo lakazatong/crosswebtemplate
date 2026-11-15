@@ -2,7 +2,7 @@
 // std
 import { rmSync, existsSync, readdirSync, statSync } from "fs";
 // internal
-import { isMain, run } from "./_utils.js";
+import { isMain, run, isWindows } from "./_utils.js";
 
 function killAll(processName) {
     try {
@@ -50,8 +50,10 @@ function unregisterWslDistro(distroName) {
 }
 
 export function clean() {
-    killAll("cwt.exe");
-    unregisterWslDistro("cwt-linux");
+    if (isWindows()) {
+        killAll("cwt.exe");
+        unregisterWslDistro("cwt-linux");
+    }
 
     for (const dir of [
         ".build",

@@ -139,16 +139,27 @@ std::uint32_t WebViewBridge::get_export(const std::string &name)
 #ifdef _WIN32
     HMODULE module = GetModuleHandleW(nullptr);
     FARPROC symbol = GetProcAddress(module, name.c_str());
-#else
-    void *module = dlopen(nullptr, RTLD_NOW);
-    void *symbol = dlsym(module, name.c_str());
-#endif
-
     if (!symbol)
     {
         throw std::runtime_error("Zig export not found: " + name);
     }
+#else
+   void *module = dlopen(nullptr, RTLD_NOW);
+    if (!module)
+    {
+        throw std::runtime_error(dlerror());
+    }
 
+    dlerror();
+    void *symbol = dlsym(module, name.c_str());
+    const char *error = dlerror();
+
+    if (error)
+    {
+        throw std::runtime_error("Zig export not found: " + name + ": " + error);
+    }
+#endif
+    
     return *reinterpret_cast<const std::uint32_t *>(symbol);
 }
 
