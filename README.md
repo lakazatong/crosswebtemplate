@@ -8,12 +8,23 @@ A minimal template for shipping the same frontend across Windows, Linux, Web, an
 
 These are obtained by running `npm run export:all`, and checking the size of every folder under `dist/`.
 
-| Platform | Size    |
-| -------- | ------- |
-| Windows  | 1.19 MB |
-| Linux    | 5.03 MB |
-| Web      | 1.12 MB |
-| Android  | 4.91 MB |
+Windows:
+
+| Platform | Size   |
+| -------- | ------ |
+| Windows  | 1.2 MB |
+| Linux    | 5.0 MB |
+| Web      | 1.1 MB |
+| Android  | 4.9 MB |
+
+Linux (Arch):
+
+| Platform | Size   |
+| -------- | ------ |
+| Windows  | 2.2 MB |
+| Linux    | 5.2 MB |
+| Web      | 1.2 MB |
+| Android  | 5.0 MB |
 
 ## Requirements
 
@@ -28,7 +39,11 @@ If you are on Windows:
 
 If you are on Linux (Arch is the only tested distro for now):
 
-- `sudo pacman -S --needed nodejs npm zig cmake ninja base-devel pkgconf gtk3 openssl webkit2gtk-4.1 mingw-w64-gcc`
+- `sudo pacman -S --needed base-devel pkgconf`: stuff
+- `sudo pacman -S --needed nodejs npm`: build system
+- `sudo pacman -S --needed zig`: native core
+- `sudo pacman -S --needed cmake ninja mingw-w64-gcc gtk3 webkit2gtk-4.1`: CMake + Ninja + MinGW + GTK3 (or WebKitGTK), needed to build the Windows and Linux targets
+- `yay -S android-sdk-cmdline-tools-latest android-ndk android-sdk-platform-tools android-sdk-build-tools openssl`: provides Gradle, Kotlin, the Android NDK and platform-tools like `adb` for the Android target.
 
 ## Basic Usage
 
@@ -48,9 +63,10 @@ See `package.json` for more.
 
 In order to build for Android, make sure of the following:
 
-- Have `C:/Program Files/Android/Android Studio/jbr/bin` on PATH.
-- Provide a `sdk.dir` entry in `mobile/android/local.properties`, usually `C:/Users/Bo_wo/AppData/Local/Android/Sdk`.
-- Use the following command
+- Have `C:/Program Files/Android/Android Studio/jbr/bin` on PATH (Windows).
+- Provide a `sdk.dir` entry in `mobile/android/local.properties`, usually `C:/Users/Bo_wo/AppData/Local/Android/Sdk` (Windows) or `/opt/android-ndk` (so called ANDROID_NDK_HOME or ANDROID_NDK_ROOT) (Linux).
+- Expect to get errors like `Failed to install the following Android SDK packages as some licences have not been accepted.`, they will explicitly recommend you to run the "sdkmanager command line tool" or transfer licenses from one workstation to another. You can also directly download the requested packages directly using `sudo ANDROID_NDK_HOME/cmdline-tools/latest/bin/sdkmanager <package>...` (Linux)
+- Use the following command:
 
 ```bash
 keytool -genkeypair -v -keystore crosswebtemplate.keystore -alias crosswebtemplate -keyalg RSA -keysize 2048 -validity 10000

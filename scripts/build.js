@@ -16,6 +16,8 @@ import {
     run,
     runCapture,
     isWindows,
+    isLinux,
+    isMac,
 } from "./_utils.js";
 import { generateAndroidIcons } from "./generate-icons.js";
 
@@ -213,11 +215,23 @@ export async function buildProject(platform) {
                 const sdkDir =
                     process.env.ANDROID_SDK_ROOT ??
                     process.env.ANDROID_HOME ??
-                    (process.platform === "win32"
+                    (isWindows()
                         ? path.join(os.homedir(), "AppData", "Local", "Android", "Sdk")
-                        : process.platform === "darwin"
+                        : isMac()
                           ? path.join(os.homedir(), "Library", "Android", "sdk")
                           : path.join(os.homedir(), "Android", "Sdk"));
+
+                const directCandidates = [
+                    process.env.ANDROID_NDK_ROOT,
+                    process.env.ANDROID_NDK_HOME,
+                    ...(isLinux() ? ["/opt/android-ndk"] : []),
+                ].filter(Boolean);
+
+                for (const candidate of directCandidates) {
+                    if (fs.existsSync(path.join(candidate, "source.properties"))) {
+                        return candidate;
+                    }
+                }
 
                 const ndkDir = path.join(sdkDir, "ndk");
 
@@ -245,14 +259,22 @@ export async function buildProject(platform) {
 
                 return candidates.reduce((a, b) => (a.value > b.value ? a : b)).path;
             }
-
             const ndk = findLatestNdk();
-            const ndkWindows = path.join(ndk, "toolchains", "llvm", "prebuilt", "windows-x86_64");
+            const ndkHost = isWindows()
+                ? "windows-x86_64"
+                : isMac()
+                  ? "darwin-x86_64"
+                  : "linux-x86_64";
+            const ndkPrebuilt = path.join(ndk, "toolchains", "llvm", "prebuilt", ndkHost);
 
             function getZigLinkCommand() {
-                const clang = path.join(ndkWindows, "bin", "aarch64-linux-android24-clang.cmd");
+                const clang = path.join(
+                    ndkPrebuilt,
+                    "bin",
+                    `aarch64-linux-android24-clang${isWindows() ? ".cmd" : ""}`,
+                );
                 const soFile = path.join(androidZigOutDir, "libcore.so");
-                const jniInclude = path.join(ndkWindows, "sysroot", "usr", "include");
+                const jniInclude = path.join(ndkPrebuilt, "sysroot", "usr", "include");
                 return [
                     clang,
                     "-shared",
@@ -269,11 +291,13 @@ export async function buildProject(platform) {
             function getGradleBuildCommand() {
                 const task = isRelease ? "assembleRelease" : "assembleDebug";
 
+                const gradle = isWindows() ? "gradlew.bat" : "bash gradlew";
+
                 return [
                     "cd",
                     path.join(projectRoot, "mobile", "android"),
                     "&&",
-                    "gradlew.bat",
+                    gradle,
                     task,
                     `-PzigMode=${isRelease ? "release" : "debug"}`,
                 ];
