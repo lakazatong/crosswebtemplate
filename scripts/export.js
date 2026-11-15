@@ -16,7 +16,7 @@ export function exportProject(platform) {
             ensureDir("dist/linux");
 
             cpSync(".build/frontend", "dist/linux/www", { recursive: true });
-            cpSync(".build/linux/Release/cwt", "dist/linux/cwt");
+            cpSync(".build/linux/release/cwt", "dist/linux/cwt");
             break;
         case "web":
             ensureDir("dist/web");

@@ -22,13 +22,17 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_DEBUG OFF)
 if(WIN32)
     enable_language(RC)
 
-	add_compile_options(/arch:AVX2) # make sure SIMD optimizations take place
-	add_compile_options(/utf-8)
-
-    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDebug)
-    else()
-        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+    if(MSVC)
+        add_compile_options(/arch:AVX2) # make sure SIMD optimizations take place
+        add_compile_options(/utf-8)
+    
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDebug)
+        else()
+            set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+        endif()
+    elseif(MINGW)
+        add_compile_options(-mavx2)
     endif()
 endif()
 
@@ -85,6 +89,14 @@ endif()
 set(WEBVIEW_MSWEBVIEW2_BUILTIN_IMPL ON CACHE BOOL "" FORCE)
 set(WEBVIEW_MSWEBVIEW2_EXPLICIT_LINK ON CACHE BOOL "" FORCE)
 
+if(MINGW)
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/compat")
+    file(WRITE "${CMAKE_BINARY_DIR}/compat/EventToken.h"
+        "#include <eventtoken.h>\n"
+    )
+    include_directories(BEFORE "${CMAKE_BINARY_DIR}/compat")
+endif()
+
 add_subdirectory(external/webview)
 
 if(WIN32)
@@ -113,11 +125,20 @@ target_include_directories("${CMAKE_PROJECT_NAME}" PUBLIC "${CMAKE_CURRENT_SOURC
 
 if(WIN32)
 	set_target_properties("${CMAKE_PROJECT_NAME}" PROPERTIES WIN32_EXECUTABLE TRUE)
-	target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE
-        "/SUBSYSTEM:WINDOWS"
-        "/EXPORT:alloc_count"
-        "/EXPORT:free_count"
-    )
+	
+    if(MSVC)
+        target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE
+            "/SUBSYSTEM:WINDOWS"
+            "/EXPORT:alloc_count"
+            "/EXPORT:free_count"
+        )
+    elseif(MINGW)
+        target_link_options("${CMAKE_PROJECT_NAME}" PRIVATE
+            "-Wl,--subsystem,windows"
+            "-Wl,--export-all-symbols"
+        )
+    endif()
+
 	target_sources("${CMAKE_PROJECT_NAME}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/resources/windows/resources.rc")
 elseif(APPLE)
     # set(MACOSX_BUNDLE TRUE)
@@ -144,11 +165,11 @@ string(TOLOWER "${CMAKE_SYSTEM_NAME}" SYSTEM_NAME_LOWER)
 
 if(WIN32)
     target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE
-        ntdll.lib
-        synchronization.lib
         "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/${MODE}/core.lib"
+        ntdll
+        synchronization
     )
-else(UNIX)
+else()
     target_link_libraries("${CMAKE_PROJECT_NAME}" PRIVATE
         "${BUILD_ROOT}/zig/${SYSTEM_NAME_LOWER}/${MODE}/core.a"
     )

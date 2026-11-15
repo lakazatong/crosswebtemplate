@@ -10,6 +10,14 @@
 #include "json/json.hpp"
 #include "webview/webview.h"
 
+#ifdef __MINGW32__
+__CRT_UUID_DECL(
+    ICoreWebView2_3,
+    0xA0D6DF20, 0x3B92, 0x416D,
+    0xAA, 0x0C, 0x43, 0x7A, 0x9C, 0x72, 0x78, 0x57
+)
+#endif
+
 // internal
 #include "bridge/webview_bridge.hpp"
 

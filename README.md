@@ -28,7 +28,7 @@ If you are on Windows:
 
 If you are on Linux (Arch is the only tested distro for now):
 
-- `sudo pacman -S --needed nodejs npm zig cmake ninja base-devel pkgconf gtk3 openssl webkit2gtk-4.1`
+- `sudo pacman -S --needed nodejs npm zig cmake ninja base-devel pkgconf gtk3 openssl webkit2gtk-4.1 mingw-w64-gcc`
 
 ## Basic Usage
 

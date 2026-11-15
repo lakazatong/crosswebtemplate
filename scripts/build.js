@@ -95,18 +95,45 @@ export async function buildProject(platform) {
         case "windows":
             ensureDir(buildDir);
             ensureDir(zigOutDir);
-            const desktopSourceDir = path.join(projectRoot, relativeDesktopSourceDir);
-            runPipeline([
-                getZigBuildCommand(
-                    "build-lib",
-                    "x86_64-windows-msvc",
-                    path.join(zigOutDir, "core.lib"),
-                    ["-static", "-fcompiler-rt"],
-                ),
-                cmdWithMSVC(getCMakeConfigureCommand(desktopSourceDir, buildDir)),
-                cmdWithMSVC(getCMakeBuildCommand(buildDir)),
-                getFrontendBuildCommand(platform),
-            ]);
+
+            function buildWindowsOnWindows() {
+                const desktopSourceDir = path.join(projectRoot, relativeDesktopSourceDir);
+
+                runPipeline([
+                    getZigBuildCommand(
+                        "build-lib",
+                        "x86_64-windows-msvc",
+                        path.join(zigOutDir, "core.lib"),
+                        ["-static", "-fcompiler-rt"],
+                    ),
+                    cmdWithMSVC(getCMakeConfigureCommand(desktopSourceDir, buildDir)),
+                    cmdWithMSVC(getCMakeBuildCommand(buildDir)),
+                    getFrontendBuildCommand(platform),
+                ]);
+            }
+
+            function buildWindowsOnLinux() {
+                const desktopSourceDir = path.join(projectRoot, relativeDesktopSourceDir);
+
+                runPipeline([
+                    getZigBuildCommand(
+                        "build-lib",
+                        "x86_64-windows-gnu",
+                        path.join(zigOutDir, "core.lib"),
+                        ["-static", "-fcompiler-rt"],
+                    ),
+                    getCMakeConfigureCommand(desktopSourceDir, buildDir, [
+                        `-DCMAKE_TOOLCHAIN_FILE=${path.join(
+                            desktopSourceDir,
+                            "external/webview/cmake/toolchains/x86_64-w64-mingw32.cmake",
+                        )}`,
+                    ]),
+                    getCMakeBuildCommand(buildDir),
+                    getFrontendBuildCommand(platform),
+                ]);
+            }
+
+            (isWindows() ? buildWindowsOnWindows : buildWindowsOnLinux)();
             break;
         case "linux":
             ensureDir(buildDir);
