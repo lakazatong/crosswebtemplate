@@ -1,4 +1,4 @@
 https://0xkiire.com/wasm-with-zig/
 
 copy shared into local copy:
-`rsync -av --delete --exclude=node_modules --exclude=.git --exclude=.build --exclude=dist --exclude=mobile/android/app/src/main/res --exclude=mobile/android/app/build --exclude=mobile/android/.gradle --exclude=local.properties ~/crosswebtemplate/ ~/crosswebtemplate-local/`
+`rsync -av --delete --exclude=node_modules --exclude=.git --exclude=.build --exclude=dist --exclude=mobile/android/app/src/main/res --exclude=mobile/android/app/build --exclude=mobile/android/.gradle --exclude=mobile/android/local.properties --exclude=mobile/android/.kotlin/sessions --exclude=mobile/android/gradlew ~/crosswebtemplate/ ~/crosswebtemplate-local/`
